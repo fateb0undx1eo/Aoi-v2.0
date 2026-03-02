@@ -63,7 +63,7 @@ function Overview({ socket, showToast }) {
 
   const fetchWaifuConfig = async () => {
     try {
-      const res = await fetch('http://localhost:3000/api/waifu-config', {
+      const res = await fetch(`${API_URL}/api/waifu-config`, {
         credentials: 'include'
       })
       const data = await res.json()
@@ -78,7 +78,7 @@ function Overview({ socket, showToast }) {
   const saveWaifuConfig = async () => {
     setSavingConfig(true)
     try {
-      const res = await fetch('http://localhost:3000/api/waifu-config', {
+      const res = await fetch(`${API_URL}/api/waifu-config`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',

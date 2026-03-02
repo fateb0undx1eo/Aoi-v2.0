@@ -52,7 +52,7 @@ function EmbedMessages({ showToast }) {
   const fetchChannels = async (guildId) => {
     setLoadingChannels(true)
     try {
-      const res = await fetch(`/api/channels/${guildId}`)
+      const res = await fetch(`${API_URL}/api/channels/${guildId}`)
       const data = await res.json()
       setChannels(data)
     } catch (err) {

@@ -90,7 +90,7 @@ function AutoResponder() {
     e.preventDefault();
     
     try {
-      const response = await fetch(`/api/autoresponder/${editingTrigger.id}`, {
+      const response = await fetch(`${API_URL}/api/autoresponder/${editingTrigger.id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json'
@@ -117,7 +117,7 @@ function AutoResponder() {
   const handleToggleTrigger = async (id) => {
     console.log('Toggle trigger called with id:', id);
     try {
-      const response = await fetch(`/api/autoresponder/${id}/toggle`, {
+      const response = await fetch(`${API_URL}/api/autoresponder/${id}/toggle`, {
         method: 'PATCH'
       });
       
@@ -144,7 +144,7 @@ function AutoResponder() {
     if (!confirm('Are you sure you want to delete this trigger?')) return;
     
     try {
-      const response = await fetch(`/api/autoresponder/${id}`, {
+      const response = await fetch(`${API_URL}/api/autoresponder/${id}`, {
         method: 'DELETE'
       });
       
