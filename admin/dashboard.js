@@ -59,9 +59,9 @@ app.use((req, res, next) => {
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
 
-// Serve React build
-const reactBuildPath = path.join(__dirname, '../admin-react/dist');
-app.use(express.static(reactBuildPath));
+// Serve React build - DISABLED: Dashboard is deployed on Netlify
+// const reactBuildPath = path.join(__dirname, '../admin-react/dist');
+// app.use(express.static(reactBuildPath));
 
 // ==================== AUTHENTICATION ====================
 
@@ -787,12 +787,16 @@ app.post('/api/discobase-config', (req, res) => {
     }
 });
 
-// Catch-all route for React SPA - MUST BE LAST ROUTE
+// Catch-all route - Return simple message since dashboard is on Netlify
 app.get(/.*/, (req, res) => {
     if (req.originalUrl.startsWith('/api/')) {
         return res.status(404).json({ error: 'API endpoint not found' });
     }
-    res.sendFile(path.join(__dirname, '../admin-react/dist/index.html'));
+    res.json({ 
+        message: 'Aoi Bot API is running',
+        dashboard: 'Dashboard is deployed separately on Netlify',
+        status: 'online'
+    });
 });
 
 // Start the server
