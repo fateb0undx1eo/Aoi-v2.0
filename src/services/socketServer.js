@@ -2,11 +2,20 @@ const { Server } = require('socket.io');
 
 class SocketServer {
     constructor(httpServer, client) {
+        // Get allowed origins from environment or use defaults
+        const allowedOrigins = process.env.ALLOWED_ORIGINS 
+            ? process.env.ALLOWED_ORIGINS.split(',').map(o => o.trim())
+            : ['http://localhost:5173', 'http://localhost:3000', 'https://aoisenpai.netlify.app'];
+
         this.io = new Server(httpServer, {
             cors: {
-                origin: '*',
-                methods: ['GET', 'POST']
-            }
+                origin: allowedOrigins,
+                methods: ['GET', 'POST', 'OPTIONS'],
+                credentials: true,
+                allowedHeaders: ['Authorization', 'Content-Type']
+            },
+            transports: ['websocket', 'polling'],
+            allowEIO3: true
         });
         this.client = client;
         this.connectedClients = new Set();

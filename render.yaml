@@ -28,7 +28,7 @@ services:
       - key: SESSION_SECRET
         sync: false
       - key: ALLOWED_ORIGINS
-        value: https://your-netlify-app.netlify.app
+        value: https://aoisenpai.netlify.app,http://localhost:5173,http://localhost:3000
       - key: ECLIPSE_ID
         sync: false
       - key: ACCUSED_ROLE

@@ -15,7 +15,8 @@ export const getAuthHeaders = () => {
 // Helper function for authenticated GET requests
 export const authGet = async (endpoint) => {
   const response = await fetch(`${API_URL}${endpoint}`, {
-    headers: getAuthHeaders()
+    headers: getAuthHeaders(),
+    credentials: 'include'
   });
   
   if (!response.ok) {
@@ -33,6 +34,7 @@ export const authPost = async (endpoint, data) => {
       'Content-Type': 'application/json',
       ...getAuthHeaders()
     },
+    credentials: 'include',
     body: JSON.stringify(data)
   });
   

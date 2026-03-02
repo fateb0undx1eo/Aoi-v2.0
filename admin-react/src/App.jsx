@@ -32,13 +32,17 @@ function App() {
       const token = localStorage.getItem('authToken')
       const newSocket = io(SOCKET_URL, {
         transports: ['websocket', 'polling'],
+        withCredentials: true,
         auth: {
           token: token
         },
         reconnection: true,
         reconnectionDelay: 1000,
         reconnectionAttempts: 5,
-        timeout: 20000
+        timeout: 20000,
+        extraHeaders: {
+          'Authorization': `Bearer ${token}`
+        }
       })
 
       newSocket.on('connect', () => {
@@ -80,7 +84,8 @@ function App() {
       }
       
       const res = await fetch(`${API_URL}/api/check-auth`, {
-        headers: { 'Authorization': `Bearer ${token}` }
+        headers: { 'Authorization': `Bearer ${token}` },
+        credentials: 'include'
       })
       const data = await res.json()
       setIsAuthenticated(data.authenticated)
@@ -102,7 +107,8 @@ function App() {
     try {
       const token = localStorage.getItem('authToken')
       const res = await fetch(`${API_URL}/api/bot-info`, {
-        headers: { 'Authorization': `Bearer ${token}` }
+        headers: { 'Authorization': `Bearer ${token}` },
+        credentials: 'include'
       })
       const data = await res.json()
       setBotInfo(data)
@@ -135,7 +141,8 @@ function App() {
       const token = localStorage.getItem('authToken')
       await fetch(`${API_URL}/api/logout`, { 
         method: 'POST',
-        headers: { 'Authorization': `Bearer ${token}` }
+        headers: { 'Authorization': `Bearer ${token}` },
+        credentials: 'include'
       })
       localStorage.removeItem('authToken')
       setIsAuthenticated(false)
