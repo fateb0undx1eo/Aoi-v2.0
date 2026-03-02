@@ -9,7 +9,8 @@
     "manage": "node manage.js",
     "dev": "nodemon src/index.js",
     "setup-dashboard": "node setup-dashboard.js",
-    "build-dashboard": "cd admin-react && npm run build"
+    "build-dashboard": "cd admin-react && npm run build",
+    "postinstall": "npm rebuild some-random-api --ignore-scripts || true"
   },
   "dependencies": {
     "@clack/prompts": "^0.7.0",
@@ -41,7 +42,7 @@
     "reddit-fetch": "^1.5.1",
     "set-interval-async": "^3.0.3",
     "socket.io": "^4.8.3",
-    "some-random-api": "^2.0.0"
+    "some-random-api": "^1.3.0"
   },
   "keywords": [
     "discord",
