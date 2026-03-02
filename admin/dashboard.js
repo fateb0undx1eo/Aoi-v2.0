@@ -5,6 +5,7 @@ const path = require('path');
 const http = require('http');
 const session = require('express-session');
 const chalk = require('chalk');
+const cors = require('cors');
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -22,6 +23,27 @@ client.once('ready', () => {
     console.log(chalk.green('[Dashboard] Socket.IO initialized'));
 });
 
+// CORS configuration using cors package
+const allowedOrigins = process.env.ALLOWED_ORIGINS 
+    ? process.env.ALLOWED_ORIGINS.split(',').map(o => o.trim())
+    : ['http://localhost:3000', 'http://localhost:5173', 'https://aoisenpai.netlify.app'];
+
+app.use(cors({
+    origin: function (origin, callback) {
+        // Allow requests with no origin (like mobile apps or curl)
+        if (!origin) return callback(null, true);
+        
+        if (allowedOrigins.includes(origin)) {
+            callback(null, true);
+        } else {
+            callback(new Error('Not allowed by CORS'));
+        }
+    },
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Origin', 'X-Requested-With', 'Content-Type', 'Accept', 'Authorization']
+}));
+
 // Session configuration
 app.use(session({
     secret: process.env.SESSION_SECRET || 'discobase-secret-key-change-this',
@@ -31,31 +53,9 @@ app.use(session({
         secure: process.env.NODE_ENV === 'production',
         httpOnly: true,
         maxAge: 24 * 60 * 60 * 1000,
-        sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax' // Allow cross-origin cookies
+        sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax'
     }
 }));
-
-// CORS configuration for HTTPS
-app.use((req, res, next) => {
-    const allowedOrigins = process.env.ALLOWED_ORIGINS 
-        ? process.env.ALLOWED_ORIGINS.split(',') 
-        : ['http://localhost:3000', 'https://localhost:3000', 'https://aoisenpai.netlify.app'];
-    
-    const origin = req.headers.origin;
-    if (allowedOrigins.includes(origin)) {
-        res.header('Access-Control-Allow-Origin', origin);
-    }
-    
-    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-    res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
-    res.header('Access-Control-Allow-Credentials', 'true');
-    
-    if (req.method === 'OPTIONS') {
-        res.sendStatus(200);
-    } else {
-        next();
-    }
-});
 
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
