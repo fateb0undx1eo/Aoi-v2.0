@@ -1,0 +1,21 @@
+[build]
+  base = "admin-react"
+  command = "npm run build"
+  publish = "dist"
+
+[build.environment]
+  NODE_VERSION = "18"
+
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+
+[context.production.environment]
+  VITE_API_URL = "https://aoi-bot-1bin.onrender.com"
+
+[context.deploy-preview.environment]
+  VITE_API_URL = "https://aoi-bot-1bin.onrender.com"
+
+[context.branch-deploy.environment]
+  VITE_API_URL = "https://aoi-bot-1bin.onrender.com"

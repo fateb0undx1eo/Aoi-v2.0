@@ -39,13 +39,21 @@ function Commands({ socket, showToast }) {
 
   const fetchCommands = async () => {
     try {
-      const res = await fetch(`${API_URL}/api/commands`)
+      const token = localStorage.getItem('authToken')
+      const res = await fetch(`${API_URL}/api/commands`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      })
       const data = await res.json()
-      setCommands(data)
+      // Ensure data has the expected structure
+      setCommands({
+        slash: Array.isArray(data.slash) ? data.slash : [],
+        prefix: Array.isArray(data.prefix) ? data.prefix : []
+      })
       setLoading(false)
     } catch (err) {
       console.error('Failed to fetch commands:', err)
       showToast?.('Failed to load commands', 'error')
+      setCommands({ slash: [], prefix: [] })
       setLoading(false)
     }
   }
@@ -71,9 +79,13 @@ function Commands({ socket, showToast }) {
     
     setUpdatingPrefix(true)
     try {
+      const token = localStorage.getItem('authToken')
       const res = await fetch(`${API_URL}/api/prefix`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
         body: JSON.stringify({ prefix: newPrefix })
       })
       const data = await res.json()
@@ -94,9 +106,13 @@ function Commands({ socket, showToast }) {
   const toggleCommand = async (commandName, currentDisabled) => {
     setToggling(commandName)
     try {
+      const token = localStorage.getItem('authToken')
       const res = await fetch(`${API_URL}/api/commands/toggle`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
         body: JSON.stringify({
           commandName,
           disabled: !currentDisabled

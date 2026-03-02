@@ -54,19 +54,34 @@ function Overview({ socket, showToast }) {
       const res = await fetch(`${API_URL}/api/overview-stats`, {
         headers: { 'Authorization': `Bearer ${token}` }
       })
+      
+      if (!res.ok) {
+        throw new Error(`HTTP ${res.status}: ${res.statusText}`)
+      }
+      
       const data = await res.json()
       setStats(data)
       setLoading(false)
     } catch (err) {
       console.error('Failed to fetch stats:', err)
       showToast?.('Failed to load stats', 'error')
+      // Set default stats to prevent undefined errors
+      setStats({
+        guilds: 0,
+        members: 0,
+        commands: 0,
+        channels: 0,
+        uptime: 0
+      })
       setLoading(false)
     }
   }
 
   const fetchWaifuConfig = async () => {
     try {
+      const token = localStorage.getItem('authToken')
       const res = await fetch(`${API_URL}/api/waifu-config`, {
+        headers: { 'Authorization': `Bearer ${token}` },
         credentials: 'include'
       })
       const data = await res.json()
@@ -81,9 +96,13 @@ function Overview({ socket, showToast }) {
   const saveWaifuConfig = async () => {
     setSavingConfig(true)
     try {
+      const token = localStorage.getItem('authToken')
       const res = await fetch(`${API_URL}/api/waifu-config`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
         credentials: 'include',
         body: JSON.stringify(waifuConfig)
       })

@@ -29,12 +29,24 @@ function App() {
   // Initialize WebSocket after authentication
   useEffect(() => {
     if (isAuthenticated && !socket) {
+      const token = localStorage.getItem('authToken')
       const newSocket = io(SOCKET_URL, {
-        transports: ['websocket', 'polling']
+        transports: ['websocket', 'polling'],
+        auth: {
+          token: token
+        },
+        reconnection: true,
+        reconnectionDelay: 1000,
+        reconnectionAttempts: 5,
+        timeout: 20000
       })
 
       newSocket.on('connect', () => {
         console.log('WebSocket connected')
+      })
+
+      newSocket.on('connect_error', (error) => {
+        console.error('WebSocket connection error:', error)
       })
 
       newSocket.on('botStats', (data) => {
