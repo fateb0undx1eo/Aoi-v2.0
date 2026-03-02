@@ -1,0 +1,37 @@
+services:
+  - type: web
+    name: discord-bot
+    env: node
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: BOT_TOKEN
+        sync: false
+      - key: BOT_ID
+        sync: false
+      - key: MONGO_URI
+        sync: false
+      - key: REDDIT_CLIENT_ID
+        sync: false
+      - key: REDDIT_CLIENT_SECRET
+        sync: false
+      - key: REDDIT_USER_AGENT
+        sync: false
+      - key: SRA_TOKEN
+        sync: false
+      - key: DASHBOARD_USERNAME
+        sync: false
+      - key: DASHBOARD_PASSWORD
+        sync: false
+      - key: SESSION_SECRET
+        sync: false
+      - key: ALLOWED_ORIGINS
+        value: https://your-netlify-app.netlify.app
+      - key: ECLIPSE_ID
+        sync: false
+      - key: ACCUSED_ROLE
+        sync: false
+      - key: DOMAIN_EXPANSION
+        sync: false

@@ -1,0 +1,83 @@
+{
+  "name": "create-discobase",
+  "version": "3.0.0",
+  "description": "Easily create and manage your Discord bot with our powerful toolkit! 🚀",
+  "main": "src/index.js",
+  "bin": {
+    "create-discobase": "./setup.mjs"
+  },
+  "scripts": {
+    "start": "node .",
+    "generate": "node cli.js",
+    "manage": "node manage.js",
+    "dev": "nodemon src/index.js",
+    "setup-dashboard": "node setup-dashboard.js",
+    "build-dashboard": "cd admin-react && npm run build"
+  },
+  "dependencies": {
+    "@clack/prompts": "^0.7.0",
+    "@types/node": "^22.17.0",
+    "axios": "^1.13.5",
+    "boxen": "^8.0.1",
+    "chalk": "^4.1.2",
+    "chess-web-api": "^1.2.0",
+    "chokidar": "^4.0.3",
+    "cli-progress": "^3.12.0",
+    "cors": "^2.8.5",
+    "discobase-core": "^1.0.3",
+    "discord.js": "^14.25.1",
+    "dotenv": "^17.2.4",
+    "express": "^5.2.1",
+    "express-session": "^1.19.0",
+    "figlet": "^1.10.0",
+    "fs-extra": "^10.1.0",
+    "gradient-string": "^3.0.0",
+    "lyrics-finder": "^21.7.0",
+    "micromatch": "^4.0.8",
+    "mongodb": "^6.18.0",
+    "mongoose": "^8.23.0",
+    "multer": "^2.0.2",
+    "node-fetch": "^2.7.0",
+    "react": "^19.2.4",
+    "react-dom": "^19.2.4",
+    "react-scripts": "^5.0.1",
+    "reddit-fetch": "^1.5.1",
+    "set-interval-async": "^3.0.3",
+    "socket.io": "^4.8.3",
+    "some-random-api": "^2.0.0"
+  },
+  "keywords": [
+    "discord",
+    "bot",
+    "commands",
+    "command handler",
+    "event handler",
+    "handler",
+    "discobase",
+    "toolkit",
+    "discord.js"
+  ],
+  "author": "Ethical Programmer",
+  "license": "Apache-2.0",
+  "devDependencies": {
+    "nodemon": "^3.1.11"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ethical-programmer/create-discobase"
+  },
+  "homepage": "https://www.discobase.site/",
+  "bugs": {
+    "url": "https://github.com/ethical-programmer/create-discobase/issues"
+  },
+  "contributors": [
+    {
+      "name": "Ethical Programmer",
+      "url": "https://github.com/ethical-programmer"
+    },
+    {
+      "name": "Krunal Patil",
+      "url": "https://github.com/KrunalPatil6214"
+    }
+  ]
+}
