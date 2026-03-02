@@ -1,11 +1,8 @@
 {
-  "name": "create-discobase",
-  "version": "3.0.0",
-  "description": "Easily create and manage your Discord bot with our powerful toolkit! 🚀",
+  "name": "aoi-v2",
+  "version": "2.0.0",
+  "description": "Aoi v2.0 - Advanced Discord Bot with Admin Dashboard",
   "main": "src/index.js",
-  "bin": {
-    "create-discobase": "./setup.mjs"
-  },
   "scripts": {
     "start": "node .",
     "generate": "node cli.js",
@@ -49,35 +46,20 @@
   "keywords": [
     "discord",
     "bot",
-    "commands",
-    "command handler",
-    "event handler",
-    "handler",
-    "discobase",
-    "toolkit",
+    "aoi",
     "discord.js"
   ],
-  "author": "Ethical Programmer",
+  "author": "fateb0undx1eo",
   "license": "Apache-2.0",
   "devDependencies": {
     "nodemon": "^3.1.11"
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/ethical-programmer/create-discobase"
+    "url": "https://github.com/fateb0undx1eo/Aoi-v2.0"
   },
-  "homepage": "https://www.discobase.site/",
+  "homepage": "https://github.com/fateb0undx1eo/Aoi-v2.0",
   "bugs": {
-    "url": "https://github.com/ethical-programmer/create-discobase/issues"
-  },
-  "contributors": [
-    {
-      "name": "Ethical Programmer",
-      "url": "https://github.com/ethical-programmer"
-    },
-    {
-      "name": "Krunal Patil",
-      "url": "https://github.com/KrunalPatil6214"
-    }
-  ]
+    "url": "https://github.com/fateb0undx1eo/Aoi-v2.0/issues"
+  }
 }
