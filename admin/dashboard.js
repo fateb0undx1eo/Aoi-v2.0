@@ -72,29 +72,48 @@ app.post('/api/login', (req, res) => {
     const validPassword = process.env.DASHBOARD_PASSWORD || 'admin';
 
     if (username === validUsername && password === validPassword) {
-        req.session.authenticated = true;
-        res.json({ success: true, message: 'Logged in successfully' });
+        // Generate a simple token (in production, use JWT)
+        const token = Buffer.from(`${username}:${password}`).toString('base64');
+        res.json({ success: true, message: 'Logged in successfully', token });
     } else {
         res.status(401).json({ success: false, message: 'Invalid credentials' });
     }
 });
 
 app.post('/api/logout', (req, res) => {
-    req.session.destroy();
     res.json({ success: true, message: 'Logged out successfully' });
 });
 
 app.get('/api/auth/status', (req, res) => {
-    res.json({ authenticated: req.session && req.session.authenticated });
+    const token = req.headers.authorization?.replace('Bearer ', '');
+    const authenticated = validateToken(token);
+    res.json({ authenticated });
 });
 
 app.get('/api/check-auth', (req, res) => {
-    res.json({ authenticated: req.session && req.session.authenticated });
+    const token = req.headers.authorization?.replace('Bearer ', '');
+    const authenticated = validateToken(token);
+    res.json({ authenticated });
 });
+
+// Token validation helper
+function validateToken(token) {
+    if (!token) return false;
+    try {
+        const decoded = Buffer.from(token, 'base64').toString('utf-8');
+        const [username, password] = decoded.split(':');
+        const validUsername = process.env.DASHBOARD_USERNAME || 'admin';
+        const validPassword = process.env.DASHBOARD_PASSWORD || 'admin';
+        return username === validUsername && password === validPassword;
+    } catch {
+        return false;
+    }
+}
 
 // Auth middleware
 function requireAuth(req, res, next) {
-    if (req.session && req.session.authenticated) {
+    const token = req.headers.authorization?.replace('Bearer ', '');
+    if (validateToken(token)) {
         next();
     } else {
         res.status(401).json({ error: 'Authentication required' });

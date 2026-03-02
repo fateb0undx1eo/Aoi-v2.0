@@ -123,7 +123,9 @@ function Login({ onLogin }) {
 
       const data = await res.json()
 
-      if (data.success) {
+      if (data.success && data.token) {
+        // Store token in localStorage
+        localStorage.setItem('authToken', data.token)
         onLogin()
       } else {
         setError(data.message || 'Invalid credentials')

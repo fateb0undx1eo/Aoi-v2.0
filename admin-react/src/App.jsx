@@ -60,15 +60,27 @@ function App() {
 
   const checkAuth = async () => {
     try {
-      const res = await fetch(`${API_URL}/api/check-auth`)
+      const token = localStorage.getItem('authToken')
+      if (!token) {
+        setIsAuthenticated(false)
+        setIsCheckingAuth(false)
+        return
+      }
+      
+      const res = await fetch(`${API_URL}/api/check-auth`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      })
       const data = await res.json()
       setIsAuthenticated(data.authenticated)
       if (data.authenticated) {
         fetchBotInfo()
+      } else {
+        localStorage.removeItem('authToken')
       }
     } catch (err) {
       console.error('Auth check failed:', err)
       setIsAuthenticated(false)
+      localStorage.removeItem('authToken')
     } finally {
       setIsCheckingAuth(false)
     }
@@ -76,7 +88,10 @@ function App() {
 
   const fetchBotInfo = async () => {
     try {
-      const res = await fetch(`${API_URL}/api/bot-info`)
+      const token = localStorage.getItem('authToken')
+      const res = await fetch(`${API_URL}/api/bot-info`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      })
       const data = await res.json()
       setBotInfo(data)
     } catch (err) {
@@ -105,7 +120,12 @@ function App() {
 
   const handleLogout = async () => {
     try {
-      await fetch(`${API_URL}/api/logout`, { method: 'POST' })
+      const token = localStorage.getItem('authToken')
+      await fetch(`${API_URL}/api/logout`, { 
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}` }
+      })
+      localStorage.removeItem('authToken')
       setIsAuthenticated(false)
       setBotInfo(null)
       if (socket) {
