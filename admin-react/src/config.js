@@ -12,12 +12,24 @@ export const getAuthHeaders = () => {
   return token ? { 'Authorization': `Bearer ${token}` } : {};
 };
 
-// Helper function for authenticated fetch
-export const authFetch = async (url, options = {}) => {
-  const headers = {
-    ...getAuthHeaders(),
-    ...options.headers
-  };
-  
-  return fetch(url, { ...options, headers });
+// Helper function for authenticated GET requests
+export const authGet = async (endpoint) => {
+  const response = await fetch(`${API_URL}${endpoint}`, {
+    headers: getAuthHeaders()
+  });
+  return response.json();
 };
+
+// Helper function for authenticated POST requests
+export const authPost = async (endpoint, data) => {
+  const response = await fetch(`${API_URL}${endpoint}`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      ...getAuthHeaders()
+    },
+    body: JSON.stringify(data)
+  });
+  return response.json();
+};
+

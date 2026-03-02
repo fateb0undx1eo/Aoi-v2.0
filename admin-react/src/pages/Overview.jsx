@@ -50,7 +50,10 @@ function Overview({ socket, showToast }) {
 
   const fetchStats = async () => {
     try {
-      const res = await fetch(`${API_URL}/api/overview-stats`)
+      const token = localStorage.getItem('authToken')
+      const res = await fetch(`${API_URL}/api/overview-stats`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      })
       const data = await res.json()
       setStats(data)
       setLoading(false)

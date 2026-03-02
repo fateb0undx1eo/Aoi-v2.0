@@ -52,7 +52,10 @@ function Commands({ socket, showToast }) {
 
   const fetchPrefix = async () => {
     try {
-      const res = await fetch(`${API_URL}/api/prefix`)
+      const token = localStorage.getItem('authToken')
+      const res = await fetch(`${API_URL}/api/prefix`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      })
       const data = await res.json()
       if (data.prefix) {
         setPrefix(data.prefix)
