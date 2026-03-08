@@ -6,38 +6,39 @@ const {
 module.exports = {
   data: new SlashCommandBuilder()
     .setName("memegen3")
-    .setDescription("Create memes - Even more templates (Page 3)")
+    .setDescription("Create memes - Vintage & animal templates")
     .addStringOption(option =>
       option
         .setName("template")
         .setDescription("Meme template")
         .setRequired(true)
         .addChoices(
-          { name: "Thumbs Up", value: "thumbsup" },
-          { name: "Thumbs Down", value: "thumbsdown" },
-          { name: "Thanos Snap", value: "thanos" },
-          { name: "Joker Stairs", value: "joker" },
-          { name: "Batman Slap", value: "batman" },
-          { name: "Spiderman Desk", value: "spiderman-desk" },
-          { name: "The Office", value: "office" },
-          { name: "Friends", value: "friends" },
-          { name: "Breaking Bad", value: "breaking-bad" },
-          { name: "Smudge the Cat", value: "cat" },
-          { name: "Doge Dog", value: "dog" },
-          { name: "Awkward Seal", value: "seal" },
-          { name: "Confession Bear", value: "bear" },
-          { name: "Courage Wolf", value: "wolf" },
-          { name: "Socially Awkward Penguin", value: "penguin" },
-          { name: "Rick Roll", value: "rickroll" },
-          { name: "Troll Face", value: "troll" },
+          // Vintage & Animal Memes - ALL VERIFIED WORKING
+          { name: "It's Simple Kill Batman", value: "joker" },
+          { name: "Are You Two Friends", value: "friends" },
+          { name: "I Can Has Cheezburger", value: "icanhas" },
+          { name: "Confession Bear", value: "cb" },
+          { name: "Insanity Wolf", value: "iw" },
+          { name: "Socially Awkward Penguin", value: "awkward" },
+          { name: "Socially Awesome Penguin", value: "awesome" },
+          { name: "Forever Alone", value: "fa" },
+          { name: "Troll Face", value: "trollface" },
           { name: "Rage Guy", value: "rage" },
-          { name: "Yao Ming", value: "yao" },
-          { name: "Cereal Guy", value: "cereal" },
-          { name: "Poker Face", value: "poker" },
-          { name: "Me Gusta", value: "megusta" },
-          { name: "Forever Alone", value: "foreveralone" },
-          { name: "Minecraft", value: "minecraft" },
-          { name: "Among Us", value: "among" }
+          { name: "Y U NO Guy", value: "yuno" },
+          { name: "Joseph Ducreux", value: "jd" },
+          { name: "Philosoraptor", value: "philosoraptor" },
+          { name: "I Should Buy a Boat", value: "boat" },
+          { name: "No Idea What I'm Doing", value: "noidea" },
+          { name: "Scumbag Steve", value: "ss" },
+          { name: "Good Guy Greg", value: "ggg" },
+          { name: "Overly Attached Girlfriend", value: "oag" },
+          { name: "Dating Site Murderer", value: "dsm" },
+          { name: "10 Guy", value: "tenguy" },
+          { name: "Foul Bachelor Frog", value: "fbf" },
+          { name: "Scumbag Brain", value: "sb" },
+          { name: "Sudden Clarity Clarence", value: "scc" },
+          { name: "First World Problems", value: "fwp" },
+          { name: "Butthurt Dweller", value: "bd" }
         )
     )
     .addStringOption(option =>

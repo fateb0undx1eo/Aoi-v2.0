@@ -6,38 +6,39 @@ const {
 module.exports = {
   data: new SlashCommandBuilder()
     .setName("memegen4")
-    .setDescription("Create memes - Gaming & More (Page 4)")
+    .setDescription("Create memes - Movie & TV templates")
     .addStringOption(option =>
       option
         .setName("template")
         .setDescription("Meme template")
         .setRequired(true)
         .addChoices(
-          { name: "Roblox", value: "roblox" },
-          { name: "Fortnite", value: "fortnite" },
-          { name: "GTA", value: "gta" },
-          { name: "Twitter Screenshot", value: "twitter" },
-          { name: "Reddit", value: "reddit" },
-          { name: "Discord", value: "discord" },
-          { name: "TikTok", value: "tiktok" },
-          { name: "Putin", value: "putin" },
-          { name: "Trump", value: "trump" },
-          { name: "Obama", value: "obama" },
-          { name: "Biden", value: "biden" },
-          { name: "Churchill", value: "churchill" },
-          { name: "Anime", value: "anime" },
-          { name: "Naruto", value: "naruto" },
-          { name: "Dragon Ball Z", value: "dbz" },
-          { name: "One Piece", value: "onepiece" },
-          { name: "Attack on Titan", value: "aot" },
-          { name: "Soccer", value: "soccer" },
-          { name: "Basketball", value: "basketball" },
-          { name: "Football", value: "football" },
-          { name: "Baseball", value: "baseball" },
-          { name: "Pizza", value: "pizza" },
-          { name: "Burger", value: "burger" },
-          { name: "Taco", value: "taco" },
-          { name: "Sushi", value: "sushi" }
+          // Movie & TV Memes - ALL VERIFIED WORKING
+          { name: "Donald Trump", value: "trump" },
+          { name: "Sad Joe Biden", value: "sad-biden" },
+          { name: "Sad Barack Obama", value: "sad-obama" },
+          { name: "Matrix Morpheus", value: "morpheus" },
+          { name: "Conspiracy Keanu", value: "keanu" },
+          { name: "Schrute Facts", value: "dwight" },
+          { name: "Michael Scott No God No", value: "michael-scott" },
+          { name: "Jim Halpert Whiteboard", value: "jim" },
+          { name: "That Would Be Great", value: "officespace" },
+          { name: "Inigo Montoya", value: "inigo" },
+          { name: "Confused Gandalf", value: "gandalf" },
+          { name: "You Were the Chosen One", value: "chosen" },
+          { name: "Bilbo Why Shouldn't I", value: "bilbo" },
+          { name: "Everything the Light Touches", value: "light" },
+          { name: "Condescending Wonka", value: "wonka" },
+          { name: "You Sit on Throne of Lies", value: "elf" },
+          { name: "Life Finds a Way", value: "away" },
+          { name: "See Nobody Cares", value: "dodgson" },
+          { name: "Probably Not Good Idea", value: "jw" },
+          { name: "I Am Captain Now", value: "captain" },
+          { name: "What Year Is It", value: "whatyear" },
+          { name: "Winter is Coming", value: "winter" },
+          { name: "Vince McMahon Reaction", value: "vince" },
+          { name: "Say the Line Bart", value: "say" },
+          { name: "Principal Skinner", value: "touch" }
         )
     )
     .addStringOption(option =>

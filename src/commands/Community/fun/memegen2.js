@@ -6,38 +6,39 @@ const {
 module.exports = {
   data: new SlashCommandBuilder()
     .setName("memegen2")
-    .setDescription("Create memes - More templates (Page 2)")
+    .setDescription("Create memes - Reaction templates")
     .addStringOption(option =>
       option
         .setName("template")
         .setDescription("Meme template")
         .setRequired(true)
         .addChoices(
-          { name: "Panik Kalm", value: "panik" },
-          { name: "Spiderman Pointing", value: "spiderman" },
-          { name: "Buff Doge vs Cheems", value: "buff" },
-          { name: "Tuxedo Winnie", value: "tuxedo" },
-          { name: "Sad Pablo Escobar", value: "sad-pablo" },
-          { name: "Laughing Leo", value: "leo" },
-          { name: "Baby Yoda", value: "yoda" },
-          { name: "Buzz Lightyear", value: "buzz" },
-          { name: "Patrick Star", value: "patrick" },
-          { name: "Kermit Sipping Tea", value: "kermit" },
-          { name: "Thinking Guy", value: "thinking" },
-          { name: "Big Brain", value: "brain" },
-          { name: "Not Stonks", value: "stonks-down" },
-          { name: "Trade Offer", value: "trade" },
-          { name: "Wojak", value: "wojak" },
-          { name: "Pepe the Frog", value: "pepe" },
-          { name: "NPC Wojak", value: "npc" },
-          { name: "Chad", value: "chad" },
-          { name: "Virgin vs Chad", value: "virgin" },
+          // Reaction Memes - ALL VERIFIED WORKING
+          { name: "Panik Kalm Panik", value: "panik-kalm-panik" },
+          { name: "Spider-Man Pointing", value: "spiderman" },
+          { name: "Cheems", value: "cheems" },
+          { name: "Tuxedo Winnie Pooh", value: "pooh" },
+          { name: "Kombucha Girl", value: "kombucha" },
+          { name: "Leo Strutting", value: "leo" },
+          { name: "Push It Somewhere Else", value: "patrick" },
+          { name: "But That's None of My Business", value: "kermit" },
+          { name: "Buzz Everywhere", value: "buzz" },
+          { name: "Oprah You Get a Car", value: "oprah" },
+          { name: "Inhaling Seagull", value: "seagull" },
+          { name: "Sad Frog", value: "sadfrog" },
+          { name: "Feels Good", value: "feelsgood" },
           { name: "Facepalm", value: "facepalm" },
-          { name: "Laughing", value: "laughing" },
-          { name: "Crying", value: "crying" },
-          { name: "Angry", value: "angry" },
-          { name: "Surprised", value: "surprised" },
-          { name: "Confused", value: "confused" }
+          { name: "Laughing Lizard", value: "ll" },
+          { name: "Crying on Floor", value: "cryingfloor" },
+          { name: "Awkward Moment Seal", value: "ams" },
+          { name: "Seal of Approval", value: "soa" },
+          { name: "Skeptical Snake", value: "snek" },
+          { name: "Persian Cat", value: "persian" },
+          { name: "Mini Keanu", value: "mini-keanu" },
+          { name: "Khaby Lame Shrug", value: "khaby-lame" },
+          { name: "Salt Bae", value: "saltbae" },
+          { name: "Grant Gustin Grave", value: "grave" },
+          { name: "Will Smith Slap", value: "slap" }
         )
     )
     .addStringOption(option =>

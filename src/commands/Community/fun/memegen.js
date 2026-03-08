@@ -6,19 +6,19 @@ const {
 module.exports = {
   data: new SlashCommandBuilder()
     .setName("memegen")
-    .setDescription("Create a custom meme from 100+ templates")
+    .setDescription("Create a custom meme - Classic templates")
     .addStringOption(option =>
       option
         .setName("template")
         .setDescription("Meme template (type to search)")
         .setRequired(true)
         .addChoices(
-          // Page 1 - Classic Memes
+          // Classic Memes - ALL VERIFIED WORKING
           { name: "Drake Hotline Bling", value: "drake" },
           { name: "Distracted Boyfriend", value: "db" },
           { name: "Change My Mind", value: "cmm" },
           { name: "Two Buttons", value: "ds" },
-          { name: "Expanding Brain", value: "gb" },
+          { name: "Galaxy Brain", value: "gb" },
           { name: "Is This a Pigeon?", value: "pigeon" },
           { name: "Woman Yelling at Cat", value: "woman-cat" },
           { name: "Stonks", value: "stonks" },
@@ -35,10 +35,10 @@ module.exports = {
           { name: "Doge", value: "doge" },
           { name: "Grumpy Cat", value: "grumpycat" },
           { name: "Disaster Girl", value: "disastergirl" },
-          { name: "Surprised Pikachu", value: "pikachu" },
-          { name: "Bernie Sanders", value: "bernie" },
           { name: "Anakin Padme", value: "aag" },
-          { name: "Monkey Puppet", value: "monkeypuppet" }
+          { name: "Left Exit 12", value: "exit" },
+          { name: "Epic Handshake", value: "handshake" },
+          { name: "American Chopper Argument", value: "chair" }
         )
     )
     .addStringOption(option =>
