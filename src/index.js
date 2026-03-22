@@ -1,5 +1,18 @@
 require('dotenv').config();
 const { Client, GatewayIntentBits, Partials, Collection } = require('discord.js');
+const express = require('express');
+
+// ✅ Create Express server for Render deployment
+const app = express();
+const PORT = process.env.PORT || 3000;
+
+app.get('/', (req, res) => {
+    res.send('Bot is running');
+});
+
+app.listen(PORT, () => {
+    console.log(`Express server listening on port ${PORT}`);
+});
 
 // ✅ Create a new Discord client with clear, explicit intents
 const client = new Client({
@@ -243,10 +256,7 @@ checkMissingIntents(client);
 
 // ✅ CONNECT TO MONGODB BEFORE LOGIN
 logger('INFO', 'Connecting to MongoDB...');
-await mongoose.connect(process.env.MONGO_URI, {
-    useNewUrlParser: true,
-    useUnifiedTopology: true
-});
+await mongoose.connect(process.env.MONGO_URI);
 logger('SUCCESS', 'MongoDB connected successfully!');
 
 // ✅ NOW login to Discord with retry logic
