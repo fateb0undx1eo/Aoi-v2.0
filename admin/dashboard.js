@@ -2,17 +2,12 @@ const express = require('express');
 const bodyParser = require('body-parser');
 const fs = require('fs');
 const path = require('path');
-const http = require('http');
 const session = require('express-session');
 const chalk = require('chalk');
 const cors = require('cors');
 
-const app = express();
-const port = process.env.PORT || 3000;
-const client = require('../src/index');
-
-// Create HTTP server for Socket.IO
-const server = http.createServer(app);
+// Get the Express app and server from index.js
+const { client, server, app } = require('../src/index');
 
 // Initialize Socket.IO
 const SocketServer = require('../src/services/socketServer');
@@ -621,15 +616,5 @@ app.get(/.*/, (req, res) => {
     });
 });
 
-// Start the server
-server.listen(port, () => {
-    const now = new Date();
-    const timestamp = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-
-    console.log(
-        chalk.gray(`[${timestamp}]`) + ' ' +
-        chalk.green.bold('SUCCESS: ') +
-        'Admin dashboard running at ' +
-        chalk.underline.blue(`http://localhost:${port}`)
-    );
-});
+// Start the server (already started in index.js)
+console.log(chalk.green('[Dashboard] API routes registered'));

@@ -1,16 +1,20 @@
 require('dotenv').config();
 const { Client, GatewayIntentBits, Partials, Collection } = require('discord.js');
 const express = require('express');
+const http = require('http');
 
-// ✅ Create Express server for Render deployment
+// Create Express server for Render deployment
 const app = express();
 const PORT = process.env.PORT || 3000;
+
+// Create HTTP server for Socket.IO
+const server = http.createServer(app);
 
 app.get('/', (req, res) => {
     res.send('Bot is running');
 });
 
-app.listen(PORT, () => {
+server.listen(PORT, () => {
     console.log(`Express server listening on port ${PORT}`);
 });
 
@@ -180,13 +184,20 @@ const maxAttempts = 3;
 while (loginAttempts < maxAttempts) {
     try {
         await client.login(process.env.BOT_TOKEN || config.bot.token);
-        logger(`Bot "${client.user.username}" logged in successfully!`, 'SUCCESS');
+        // Wait for ready event before proceeding
+        await new Promise((resolve) => {
+            client.once('ready', () => {
+                logger(`Bot "${client.user.username}" logged in successfully!`, 'SUCCESS');
+                resolve();
+            });
+        });
         break;
     } catch (error) {
         loginAttempts++;
         if (loginAttempts >= maxAttempts) {
             logger(`Failed to login after ${maxAttempts} attempts`, 'ERROR');
             logger('Please check your internet connection and bot token', 'ERROR');
+            logger(`Error: ${error.message}`, 'ERROR');
             throw error;
         }
         logger(`Login attempt ${loginAttempts} failed, retrying in 5 seconds...`, 'WARNING');
@@ -199,6 +210,7 @@ while (loginAttempts < maxAttempts) {
         await handleCommands(client, path.join(process.cwd(), 'src/commands'));
         logger(`Slash commands loaded successfully! (${client.commands.size} commands)`, 'SUCCESS');
         
+        // Load dashboard routes
         if (fs.existsSync(adminFolderPath) && fs.existsSync(dashboardFilePath)) {
             require(dashboardFilePath);
             logger('Admin dashboard loaded successfully!', 'SUCCESS');
@@ -220,7 +232,7 @@ while (loginAttempts < maxAttempts) {
     }
 })();
 
-module.exports = client;
+module.exports = { client, server, app };
 
 // ──────────────[ Bot Logic ]──────────────
 //* You can start writing your custom bot logic from here!
