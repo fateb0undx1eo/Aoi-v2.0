@@ -150,6 +150,17 @@ function printAsciiArt() {
         logger('MongoDB connected successfully!', 'SUCCESS');
 
         logger('Connecting to Discord...', 'INFO');
+        
+        // Debug: Check if token exists (show first/last 4 chars only for security)
+        const token = process.env.BOT_TOKEN || config.bot.token;
+        if (!token) {
+            logger('ERROR: No bot token found in environment variables!', 'ERROR');
+            logger('Check that BOT_TOKEN is set in Render environment variables', 'ERROR');
+            process.exit(1);
+        }
+        const tokenPreview = `${token.substring(0, 4)}...${token.substring(token.length - 4)}`;
+        logger(`Using token: ${tokenPreview} (length: ${token.length})`, 'INFO');
+        
         let loginAttempts = 0;
         const maxAttempts = 3;
 

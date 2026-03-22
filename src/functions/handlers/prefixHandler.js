@@ -4,6 +4,7 @@ const path = require('path');
 const chokidar = require('chokidar');
 const chalk = require('chalk');
 const { logErrorToFile } = require('../../utils/errorLogger');
+const { getDisabledCommands } = require('../../utils/discobase');
 
 // ✅ NEW unified logger
 function log(message, type = 'INFO') {
@@ -37,6 +38,19 @@ function log(message, type = 'INFO') {
     const formatted = `${timeBox}${typeBox}${chalk.white(' │ ')}${message}`;
 
     console.log(formatted);
+}
+
+// Debounce helper function
+function debounce(func, wait) {
+    let timeout;
+    return function executedFunction(...args) {
+        const later = () => {
+            clearTimeout(timeout);
+            func(...args);
+        };
+        clearTimeout(timeout);
+        timeout = setTimeout(later, wait);
+    };
 }
 
 function prefixHandler(client, prefixPath) {
