@@ -63,45 +63,13 @@ const eventsPath = './events';
 // ──────────────[ Safety Nets ]──────────────
 antiCrash();
 
-// ──────────────[ Error Handling ]──────────────
-const errorsDir = path.join(__dirname, '../../../errors');
-
-function ensureErrorDirectoryExists() {
-    if (!fs.existsSync(errorsDir)) {
-        fs.mkdirSync(errorsDir);
-    }
-}
+// ──────────────[ Utilities ]──────────────
+const { logErrorToFile } = require('./utils/errorLogger');
+const { log: logger } = require('./utils/logger');
 
 async function loadGradient() {
     const mod = await import('gradient-string');
     return mod.default;
-}
-
-function logErrorToFile(error) {
-    try {
-        // Check if error logging is enabled in discobase.json
-        const discobasePath = path.join(__dirname, '../discobase.json');
-        if (fs.existsSync(discobasePath)) {
-            const discobaseConfig = JSON.parse(fs.readFileSync(discobasePath, 'utf8'));
-            if (discobaseConfig.errorLogging && discobaseConfig.errorLogging.enabled === false) {
-                // Error logging is disabled, do nothing
-                return;
-            }
-        }
-        
-        ensureErrorDirectoryExists();
-
-        // Convert the error object into a string, including the stack trace
-        const errorMessage = `${error.name}: ${error.message}\n${error.stack}`;
-
-        const fileName = `${new Date().toISOString().replace(/:/g, '-')}.txt`;
-        const filePath = path.join(errorsDir, fileName);
-
-        fs.writeFileSync(filePath, errorMessage, 'utf8');
-    } catch (err) {
-        // If there's an error while logging the error, just silently fail
-        // We don't want errors in error logging to cause more issues
-    }
 }
 
 // ──────────────[ ASCII Art & Header ]──────────────
@@ -160,51 +128,7 @@ function printAsciiArt() {
     });
 }
 
-// ──────────────[ Logger Function ]──────────────
-// Custom logger function for consistent formatting
-function logger(type, message) {
-    const timestamp = new Date().toLocaleTimeString();
-    let prefix, icon, color;
-    
-    switch(type.toUpperCase()) {
-        case 'SUCCESS':
-            icon = '✓';
-            prefix = 'SUCCESS';
-            color = chalk.green;
-            break;
-        case 'INFO':
-            icon = 'ℹ';
-            prefix = 'INFO';
-            color = chalk.blue;
-            break;
-        case 'WARNING':
-            icon = '⚠';
-            prefix = 'WARNING';
-            color = chalk.yellow;
-            break;
-        case 'ERROR':
-            icon = '✖';
-            prefix = 'ERROR';
-            color = chalk.red;
-            break;
-        case 'SYSTEM':
-            icon = '⚙';
-            prefix = 'SYSTEM';
-            color = chalk.cyan;
-            break;
-        default:
-            icon = '•';
-            prefix = type;
-            color = chalk.white;
-    }
-    
-    // Create a box-like format for the log message
-    const timeBox = chalk.gray(`[${timestamp}]`);
-    const typeBox = color.bold(` ${icon} ${prefix} `);
-    const messageText = color(`${message}`);
-    
-    console.log(`${timeBox}${typeBox}${chalk.white(' │ ')}${messageText}`);
-}
+
 
 // ──────────────[ Main Bot Code ]──────────────
 (async () => {
@@ -232,77 +156,65 @@ function logger(type, message) {
         
         createHeader('LOADING COMPONENTS', '⚙️', chalk.magenta);
         
-        // ✅ CRITICAL: Load prefix commands BEFORE events and login
-        logger('INFO', 'Loading prefix commands...');
-        prefixHandler(client, path.join(process.cwd(), 'src/messages'));
-        logger('SUCCESS', `Prefix commands loaded successfully! (${client.prefix.size} commands)`);
-        
-        // ✅ Debug: List loaded prefix commands
-        if (client.prefix.size > 0) {
-            const commandNames = Array.from(client.prefix.keys()).join(', ');
-            logger('INFO', `Available prefix commands: ${commandNames}`);
-        }
-        
         // Load function handlers
         require('./functions/handlers/functionHandler');
 
         // Load event handlers (this includes messageCreate for prefix commands)
-        logger('INFO', 'Loading event handlers...');
+        logger('Loading event handlers...', 'INFO');
         await eventsHandler(client, path.join(__dirname, eventsPath));
-        logger('SUCCESS', 'Event handlers loaded successfully!');
+        logger('Event handlers loaded successfully!', 'SUCCESS');
         
 // Check for missing intents
 checkMissingIntents(client);
 
-// ✅ CONNECT TO MONGODB BEFORE LOGIN
-logger('INFO', 'Connecting to MongoDB...');
+// Connect to MongoDB
+logger('Connecting to MongoDB...', 'INFO');
 await mongoose.connect(process.env.MONGO_URI);
-logger('SUCCESS', 'MongoDB connected successfully!');
+logger('MongoDB connected successfully!', 'SUCCESS');
 
-// ✅ NOW login to Discord with retry logic
-logger('INFO', 'Connecting to Discord...');
+// Login to Discord with retry logic
+logger('Connecting to Discord...', 'INFO');
 let loginAttempts = 0;
 const maxAttempts = 3;
 
 while (loginAttempts < maxAttempts) {
     try {
         await client.login(process.env.BOT_TOKEN || config.bot.token);
-        logger('SUCCESS', `Bot "${client.user.username}" logged in successfully!`);
+        logger(`Bot "${client.user.username}" logged in successfully!`, 'SUCCESS');
         break;
     } catch (error) {
         loginAttempts++;
         if (loginAttempts >= maxAttempts) {
-            logger('ERROR', `Failed to login after ${maxAttempts} attempts`);
-            logger('ERROR', 'Please check your internet connection and bot token');
+            logger(`Failed to login after ${maxAttempts} attempts`, 'ERROR');
+            logger('Please check your internet connection and bot token', 'ERROR');
             throw error;
         }
-        logger('WARNING', `Login attempt ${loginAttempts} failed, retrying in 5 seconds...`);
+        logger(`Login attempt ${loginAttempts} failed, retrying in 5 seconds...`, 'WARNING');
         await new Promise(resolve => setTimeout(resolve, 5000));
     }
 }
 
         // Load slash commands AFTER login
-        logger('INFO', 'Loading slash commands...');
+        logger('Loading slash commands...', 'INFO');
         await handleCommands(client, path.join(process.cwd(), 'src/commands'));
-        logger('SUCCESS', `Slash commands loaded successfully! (${client.commands.size} commands)`);
+        logger(`Slash commands loaded successfully! (${client.commands.size} commands)`, 'SUCCESS');
         
         if (fs.existsSync(adminFolderPath) && fs.existsSync(dashboardFilePath)) {
             require(dashboardFilePath);
-            logger('SUCCESS', 'Admin dashboard loaded successfully!');
+            logger('Admin dashboard loaded successfully!', 'SUCCESS');
         }
 
-        // Initialize activity tracker to watch the entire project
+        // Initialize activity tracker
         initActivityTracker(path.join(__dirname, '..'));
-        logger('SUCCESS', 'Activity tracker initialized for all project folders');
+        logger('Activity tracker initialized', 'SUCCESS');
         
         createHeader('BOT READY', '🚀', chalk.green);
     } catch (error) {
         if (error.message === "An invalid token was provided.") {
-            logger('ERROR', 'The token provided for the Discord bot is invalid. Please check your configuration.');
+            logger('The token provided for the Discord bot is invalid. Please check your configuration.', 'ERROR');
             logErrorToFile(error);
         } else {
-            logger('ERROR', `Failed to start bot: ${error.message}`);
-            console.error(error);
+            logger(`Failed to start bot: ${error.message}`, 'ERROR');
             logErrorToFile(error);
         }
     }

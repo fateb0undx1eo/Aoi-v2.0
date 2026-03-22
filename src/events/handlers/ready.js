@@ -5,8 +5,8 @@ const { ActivityType } = require('discord.js');
 const { prefixHandler } = require('../../functions/handlers/prefixHandler');
 const path = require('path');
 const fs = require('fs');
-
-const errorsDir = path.join(__dirname, '../../../errors');
+const { logErrorToFile } = require('../../utils/errorLogger');
+const { log: logger } = require('../../utils/logger');
 
 async function loadGradient() {
   const mod = await import('gradient-string');
@@ -60,94 +60,29 @@ function updatePresence(client, config, nameIndex) {
             status: status
         });
         
-        logWithStyle('INFO', `Updated presence: ${config.type} "${name}" (${status})`);
+        logger('Updated presence: ' + config.type + ' "' + name + '" (' + status + ')', 'INFO');
     } catch (error) {
-        logWithStyle('ERROR', 'Failed to update presence');
+        logger('Failed to update presence', 'ERROR');
         logErrorToFile(error);
     }
-}
-
-function ensureErrorDirectoryExists() {
-    if (!fs.existsSync(errorsDir)) {
-        fs.mkdirSync(errorsDir);
-    }
-}
-
-function logErrorToFile(error) {
-    try {
-        // Check if error logging is enabled in discobase.json
-        const discobasePath = path.join(__dirname, '../../../discobase.json');
-        if (fs.existsSync(discobasePath)) {
-            const discobaseConfig = JSON.parse(fs.readFileSync(discobasePath, 'utf8'));
-            if (discobaseConfig.errorLogging && discobaseConfig.errorLogging.enabled === false) {
-                // Error logging is disabled, do nothing
-                return;
-            }
-        }
-        
-        ensureErrorDirectoryExists();
-
-        const errorMessage = `${error.name}: ${error.message}\n${error.stack}`;
-        const fileName = `${new Date().toISOString().replace(/:/g, '-')}.txt`;
-        const filePath = path.join(errorsDir, fileName);
-
-        fs.writeFileSync(filePath, errorMessage, 'utf8');
-    } catch (err) {
-        // If there's an error while logging the error, just silently fail
-        // We don't want errors in error logging to cause more issues
-    }
-}
-
-function logWithStyle(status, message) {
-    const timestamp = chalk.gray(`[${new Date().toLocaleTimeString([], { hour12: true })}]`);
-
-    let icon = '';
-    let colorStatus;
-
-    switch (status) {
-        case 'SUCCESS':
-            icon = '✓';
-            colorStatus = chalk.green.bold(` ${icon} ${status} `);
-            break;
-        case 'INFO':
-            icon = 'ℹ';
-            colorStatus = chalk.blue.bold(` ${icon} ${status} `);
-            break;
-        case 'WARNING':
-            icon = '⚠';
-            colorStatus = chalk.yellow.bold(` ${icon} ${status} `);
-            break;
-        case 'ERROR':
-            icon = '✖';
-            colorStatus = chalk.red.bold(` ${icon} ${status} `);
-            break;
-        default:
-            icon = '•';
-            colorStatus = chalk.white.bold(` ${icon} ${status} `);
-    }
-
 }
 
 module.exports = {
     name: 'clientReady',
     once: true,
     async execute(client) {
-        logWithStyle('SUCCESS', 'Bot is ready and connected to Discord!');
+        logger('Bot is ready and connected to Discord!', 'SUCCESS');
 
         if (!config.database.mongodbUrl || config.database.mongodbUrl === 'YOUR_MONGODB_URL_HERE') {
-            logWithStyle('INFO', 'MongoDB URL is not provided or is set to the default placeholder. Skipping MongoDB connection.');
+            logger('MongoDB URL is not provided or is set to the default placeholder. Skipping MongoDB connection.', 'INFO');
         } else {
             try {
-                gradient = await loadGradient();
+                const gradient = await loadGradient();
                 await mongoose.connect(config.database.mongodbUrl);
-                if (mongoose.connect) {
-                    console.log(
-                        `${chalk.gray(`[${new Date().toLocaleTimeString([], { hour12: true })}]`)} ${gradient(['#caf0f8', '#90e0ef', '#0077b6'])('✓ CONNECTION │ Successfully connected to MongoDB! Database is ready.')}`
-                      );
-                }
+                const message = gradient(['#caf0f8', '#90e0ef', '#0077b6'])('✓ CONNECTION │ Successfully connected to MongoDB! Database is ready.');
+                console.log(`${chalk.gray(`[${new Date().toLocaleTimeString([], { hour12: true })}]`)} ${message}`);
             } catch (error) {
-                logWithStyle('ERROR', 'Failed to connect to MongoDB. Please check your MongoDB URL and connection.');
-                console.error(error);
+                logger('Failed to connect to MongoDB. Please check your MongoDB URL and connection.', 'ERROR');
                 logErrorToFile(error);
             }
         }
@@ -197,7 +132,7 @@ module.exports = {
                 });
             }
         } catch (error) {
-            logWithStyle('ERROR', 'Failed to set custom presence. Using default.');
+            logger('Failed to set custom presence. Using default.', 'ERROR');
             logErrorToFile(error);
             // Default presence if there's an error
             client.user.setPresence({
@@ -210,6 +145,7 @@ module.exports = {
             });
         }
 
+        // Load prefix commands
         prefixHandler(client, path.join(process.cwd(), 'src/messages'));
     },
 };

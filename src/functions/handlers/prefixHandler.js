@@ -3,57 +3,7 @@ const fs = require('fs');
 const path = require('path');
 const chokidar = require('chokidar');
 const chalk = require('chalk');
-
-const getDisabledCommands = () => {
-    const discobasePath = path.join(__dirname, '../../../discobase.json');
-    if (fs.existsSync(discobasePath)) {
-        const config = JSON.parse(fs.readFileSync(discobasePath, 'utf-8'));
-        return config.disabledCommands || [];
-    }
-    return [];
-};
-
-const debounce = (func, delay) => {
-    let timeoutId;
-    return (...args) => {
-        clearTimeout(timeoutId);
-        timeoutId = setTimeout(() => {
-            func.apply(this, args);
-        }, delay);
-    };
-};
-
-const errorsDir = path.join(__dirname, '../../../errors');
-
-function ensureErrorDirectoryExists() {
-    if (!fs.existsSync(errorsDir)) {
-        fs.mkdirSync(errorsDir);
-    }
-}
-
-function logErrorToFile(error) {
-    try {
-        // Check if error logging is enabled in discobase.json
-        const discobasePath = path.join(__dirname, '../../../discobase.json');
-        if (fs.existsSync(discobasePath)) {
-            const discobaseConfig = JSON.parse(fs.readFileSync(discobasePath, 'utf8'));
-            if (discobaseConfig.errorLogging && discobaseConfig.errorLogging.enabled === false) {
-                // Error logging is disabled, do nothing
-                return;
-            }
-        }
-        
-        ensureErrorDirectoryExists();
-
-        const errorMessage = `${error.name}: ${error.message}\n${error.stack}`;
-        const fileName = `${new Date().toISOString().replace(/:/g, '-')}.txt`;
-        const filePath = path.join(errorsDir, fileName);
-        fs.writeFileSync(filePath, errorMessage, 'utf8');
-    } catch (err) {
-        // If there's an error while logging the error, just silently fail
-        // We don't want errors in error logging to cause more issues
-    }
-}
+const { logErrorToFile } = require('../../utils/errorLogger');
 
 // ✅ NEW unified logger
 function log(message, type = 'INFO') {

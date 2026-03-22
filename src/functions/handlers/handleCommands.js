@@ -5,8 +5,9 @@ const path = require('path');
 const chokidar = require('chokidar');
 const gradientPkg = require('gradient-string');
 const gradient = gradientPkg.default || gradientPkg;
-
 const config = require('../../config');
+const { logErrorToFile } = require('../../utils/errorLogger');
+
 const activities = [];
 
 // -------------------- Activity Logging --------------------
@@ -37,27 +38,6 @@ const log = (message, type = 'INFO') => {
     console.log(`${timeBox} ${color} ${chalk.white('│')} ${messageText}`);
     addActivity(type.toLowerCase(), message);
 };
-
-// -------------------- Error Logging --------------------
-const errorsDir = path.join(__dirname, '../../../errors');
-function ensureErrorDirectoryExists() {
-    if (!fs.existsSync(errorsDir)) fs.mkdirSync(errorsDir);
-}
-
-function logErrorToFile(error) {
-    try {
-        const discobasePath = path.join(__dirname, '../../../discobase.json');
-        if (fs.existsSync(discobasePath)) {
-            const discobaseConfig = JSON.parse(fs.readFileSync(discobasePath, 'utf8'));
-            if (discobaseConfig.errorLogging?.enabled === false) return;
-        }
-
-        ensureErrorDirectoryExists();
-        const errorMessage = `${error.name}: ${error.message}\n${error.stack}`;
-        const fileName = `${new Date().toISOString().replace(/:/g, '-')}.txt`;
-        fs.writeFileSync(path.join(errorsDir, fileName), errorMessage, 'utf8');
-    } catch {}
-}
 
 // -------------------- Helpers --------------------
 const formatFilePath = (filePath) => path.relative(process.cwd(), filePath);
