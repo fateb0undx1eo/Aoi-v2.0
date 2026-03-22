@@ -14,33 +14,33 @@ app.get('/', (req, res) => {
     res.send('Bot is running');
 });
 
+// Start server immediately
 server.listen(PORT, () => {
     console.log(`Express server listening on port ${PORT}`);
 });
 
-// ✅ Create a new Discord client with clear, explicit intents
+// Create a new Discord client with clear, explicit intents
 const client = new Client({
     intents: [
-        GatewayIntentBits.Guilds,          // ✅ Required: Basic guild/server info
-        GatewayIntentBits.GuildMembers,    // ✅ Required: Guild member info
-        GatewayIntentBits.GuildMessages,   // ✅ To read messages in guild channels
-        GatewayIntentBits.MessageContent,  // ✅ To access the content of messages
-        GatewayIntentBits.DirectMessages   // ✅ To handle direct messages (DMs)
+        GatewayIntentBits.Guilds,
+        GatewayIntentBits.GuildMembers,
+        GatewayIntentBits.GuildMessages,
+        GatewayIntentBits.MessageContent,
+        GatewayIntentBits.DirectMessages
     ],
-    partials: [Partials.Channel],          // ✅ Needed for partial DM channels
-    ws: {
-        timeout: 60000                     // ✅ Increase WebSocket timeout to 60 seconds
-    },
-    rest: {
-        timeout: 60000                     // ✅ Increase REST API timeout to 60 seconds
-    }
+    partials: [Partials.Channel],
+    ws: { timeout: 60000 },
+    rest: { timeout: 60000 }
 });
 
-// ✅ Initialize collections BEFORE any handlers
+// Initialize collections BEFORE any handlers
 client.commands = new Collection();
 client.prefix = new Collection();
 
-// ──────────────[ Core Modules & Config ]──────────────
+// Export immediately so dashboard.js can import
+module.exports = { client, server, app };
+
+// Now continue with bot initialization
 const chalk = require('chalk');
 const config = require('./config');
 const figlet = require('figlet');
@@ -48,8 +48,6 @@ const fs = require('fs');
 const path = require('path');
 const mongoose = require('mongoose');
 
-
-// ──────────────[ Function Handlers ]──────────────
 const { eventsHandler } = require('./functions/handlers/handelEvents');
 const { handleCommands } = require('./functions/handlers/handleCommands');
 const { prefixHandler } = require('./functions/handlers/prefixHandler');
@@ -58,16 +56,12 @@ const { antiCrash } = require('./functions/handlers/antiCrash');
 const { initActivityTracker } = require('./functions/handlers/activityTracker');
 require('./functions/handlers/watchFolders');
 
-// ──────────────[ Setup Paths ]──────────────
 const adminFolderPath = path.join(__dirname, '../admin');
 const dashboardFilePath = path.join(adminFolderPath, 'dashboard.js');
-
 const eventsPath = './events';
 
-// ──────────────[ Safety Nets ]──────────────
 antiCrash();
 
-// ──────────────[ Utilities ]──────────────
 const { logErrorToFile } = require('./utils/errorLogger');
 const { log: logger } = require('./utils/logger');
 
@@ -76,7 +70,6 @@ async function loadGradient() {
     return mod.default;
 }
 
-// ──────────────[ ASCII Art & Header ]──────────────
 function printAsciiArt() {
     return new Promise((resolve, reject) => {
         figlet('Discobase', {
@@ -91,7 +84,6 @@ function printAsciiArt() {
                 console.dir(err);
                 reject(err);
             } else {
-                // Create a premium border around the ASCII art
                 const lines = data.split('\n');
                 const width = Math.max(...lines.map(line => line.length));
                 const horizontalBorder = '\u2550'.repeat(width + 4);
@@ -101,17 +93,12 @@ function printAsciiArt() {
                 console.log();
                 console.log(chalk.cyan(topBorder));
                 lines.forEach(line => {
-                    // Add padding to make all lines the same width
                     const padding = ' '.repeat(width - line.length);
-                    // ✅ Apply gradient to each line!
                     const gradientLine = gradient(['cyan', 'magenta'])(line);
-                    console.log(chalk.cyan('\u2551 ') + 
-                                gradientLine + padding + 
-                                chalk.cyan(' \u2551'));
+                    console.log(chalk.cyan('\u2551 ') + gradientLine + padding + chalk.cyan(' \u2551'));
                 });
                 console.log(chalk.cyan(bottomBorder));
                 
-                // Add version and author info in a stylish box
                 const version = require('../package.json').version;
                 const infoLine = `DiscoBase v${version} | The Ultimate Discord Bot toolkit!`;
                 const infoWidth = infoLine.length + 4;
@@ -120,9 +107,7 @@ function printAsciiArt() {
                 
                 console.log();
                 console.log(chalk.gray(infoBoxTop));
-                console.log(chalk.gray('\u2502 ') + 
-                            chalk.white.bold(infoLine) + 
-                            chalk.gray(' \u2502'));
+                console.log(chalk.gray('\u2502 ') + chalk.white.bold(infoLine) + chalk.gray(' \u2502'));
                 console.log(chalk.gray(infoBoxBottom));
                 console.log();
                 
@@ -132,15 +117,11 @@ function printAsciiArt() {
     });
 }
 
-
-
-// ──────────────[ Main Bot Code ]──────────────
 (async () => {
     gradient = await loadGradient();
     await printAsciiArt();
     
     try {
-        // Create fancy section headers
         function createHeader(title, icon, color) {
             const width = 80;
             const titleText = ` ${icon}  ${title} `;
@@ -150,73 +131,67 @@ function printAsciiArt() {
             
             console.log();
             console.log(chalk.gray('┌' + '─'.repeat(width - 2) + '┐'));
-            console.log(chalk.gray('│') + 
-                       chalk.gray('─'.repeat(leftPad)) + 
-                       color.bold(titleText) + 
-                       chalk.gray('─'.repeat(rightPad)) + 
-                       chalk.gray('│'));
+            console.log(chalk.gray('│') + chalk.gray('─'.repeat(leftPad)) + color.bold(titleText) + chalk.gray('─'.repeat(rightPad)) + chalk.gray('│'));
             console.log(chalk.gray('└' + '─'.repeat(width - 2) + '┘'));
         }
         
         createHeader('LOADING COMPONENTS', '⚙️', chalk.magenta);
         
-        // Load function handlers
         require('./functions/handlers/functionHandler');
 
-        // Load event handlers (this includes messageCreate for prefix commands)
         logger('Loading event handlers...', 'INFO');
         await eventsHandler(client, path.join(__dirname, eventsPath));
         logger('Event handlers loaded successfully!', 'SUCCESS');
         
-// Check for missing intents
-checkMissingIntents(client);
+        checkMissingIntents(client);
 
-// Connect to MongoDB
-logger('Connecting to MongoDB...', 'INFO');
-await mongoose.connect(process.env.MONGO_URI);
-logger('MongoDB connected successfully!', 'SUCCESS');
+        logger('Connecting to MongoDB...', 'INFO');
+        await mongoose.connect(process.env.MONGO_URI);
+        logger('MongoDB connected successfully!', 'SUCCESS');
 
-// Login to Discord with retry logic
-logger('Connecting to Discord...', 'INFO');
-let loginAttempts = 0;
-const maxAttempts = 3;
+        logger('Connecting to Discord...', 'INFO');
+        let loginAttempts = 0;
+        const maxAttempts = 3;
 
-while (loginAttempts < maxAttempts) {
-    try {
-        await client.login(process.env.BOT_TOKEN || config.bot.token);
-        // Wait for ready event before proceeding
-        await new Promise((resolve) => {
-            client.once('ready', () => {
-                logger(`Bot "${client.user.username}" logged in successfully!`, 'SUCCESS');
-                resolve();
-            });
-        });
-        break;
-    } catch (error) {
-        loginAttempts++;
-        if (loginAttempts >= maxAttempts) {
-            logger(`Failed to login after ${maxAttempts} attempts`, 'ERROR');
-            logger('Please check your internet connection and bot token', 'ERROR');
-            logger(`Error: ${error.message}`, 'ERROR');
-            throw error;
+        while (loginAttempts < maxAttempts) {
+            try {
+                await client.login(process.env.BOT_TOKEN || config.bot.token);
+                // Wait for ready event
+                await new Promise((resolve) => {
+                    const timeout = setTimeout(() => {
+                        logger('Ready event timeout - bot may have issues', 'WARNING');
+                        resolve();
+                    }, 30000); // 30 second timeout
+                    
+                    client.once('ready', () => {
+                        clearTimeout(timeout);
+                        logger(`Bot "${client.user.username}" logged in successfully!`, 'SUCCESS');
+                        resolve();
+                    });
+                });
+                break;
+            } catch (error) {
+                loginAttempts++;
+                if (loginAttempts >= maxAttempts) {
+                    logger(`Failed to login after ${maxAttempts} attempts`, 'ERROR');
+                    logger(`Error: ${error.message}`, 'ERROR');
+                    throw error;
+                }
+                logger(`Login attempt ${loginAttempts} failed, retrying in 5 seconds...`, 'WARNING');
+                await new Promise(resolve => setTimeout(resolve, 5000));
+            }
         }
-        logger(`Login attempt ${loginAttempts} failed, retrying in 5 seconds...`, 'WARNING');
-        await new Promise(resolve => setTimeout(resolve, 5000));
-    }
-}
 
-        // Load slash commands AFTER login
         logger('Loading slash commands...', 'INFO');
         await handleCommands(client, path.join(process.cwd(), 'src/commands'));
         logger(`Slash commands loaded successfully! (${client.commands.size} commands)`, 'SUCCESS');
         
-        // Load dashboard routes
+        // Load dashboard routes AFTER bot is ready
         if (fs.existsSync(adminFolderPath) && fs.existsSync(dashboardFilePath)) {
             require(dashboardFilePath);
             logger('Admin dashboard loaded successfully!', 'SUCCESS');
         }
 
-        // Initialize activity tracker
         initActivityTracker(path.join(__dirname, '..'));
         logger('Activity tracker initialized', 'SUCCESS');
         
@@ -229,10 +204,6 @@ while (loginAttempts < maxAttempts) {
             logger(`Failed to start bot: ${error.message}`, 'ERROR');
             logErrorToFile(error);
         }
+        process.exit(1); // Exit on critical error
     }
 })();
-
-module.exports = { client, server, app };
-
-// ──────────────[ Bot Logic ]──────────────
-//* You can start writing your custom bot logic from here!
