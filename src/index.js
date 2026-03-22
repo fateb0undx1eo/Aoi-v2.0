@@ -157,11 +157,11 @@ function printAsciiArt() {
             try {
                 await client.login(process.env.BOT_TOKEN || config.bot.token);
                 // Wait for ready event
-                await new Promise((resolve) => {
+                await new Promise((resolve, reject) => {
                     const timeout = setTimeout(() => {
-                        logger('Ready event timeout - bot may have issues', 'WARNING');
-                        resolve();
-                    }, 30000); // 30 second timeout
+                        logger('Ready event timeout after 30 seconds', 'ERROR');
+                        reject(new Error('Bot ready event timeout - check token and intents'));
+                    }, 30000);
                     
                     client.once('ready', () => {
                         clearTimeout(timeout);
@@ -172,12 +172,13 @@ function printAsciiArt() {
                 break;
             } catch (error) {
                 loginAttempts++;
+                logger(`Login error: ${error.message}`, 'ERROR');
                 if (loginAttempts >= maxAttempts) {
                     logger(`Failed to login after ${maxAttempts} attempts`, 'ERROR');
-                    logger(`Error: ${error.message}`, 'ERROR');
+                    logger('Check: 1) Bot token is valid 2) Intents enabled in Discord Portal', 'ERROR');
                     throw error;
                 }
-                logger(`Login attempt ${loginAttempts} failed, retrying in 5 seconds...`, 'WARNING');
+                logger(`Retrying in 5 seconds... (attempt ${loginAttempts}/${maxAttempts})`, 'WARNING');
                 await new Promise(resolve => setTimeout(resolve, 5000));
             }
         }
