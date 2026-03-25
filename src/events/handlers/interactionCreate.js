@@ -468,6 +468,7 @@ if (interaction.isRoleSelectMenu() && interaction.customId === 'autopost_role_se
 // Handle modal submission for autopost interval
 if (interaction.isModalSubmit() && interaction.customId === 'autopost_interval_modal') {
     const { updateInterval } = require('../../functions/handlers/autoPoster');
+    const { ModalBuilder, TextInputBuilder, TextInputStyle, ActionRowBuilder } = require('discord.js');
     
     const intervalSec = parseInt(interaction.fields.getTextInputValue('interval'));
     
@@ -475,7 +476,7 @@ if (interaction.isModalSubmit() && interaction.customId === 'autopost_interval_m
         return interaction.reply({ 
             content: '❌ Invalid interval. Must be a number >= 10 seconds.', 
             ephemeral: true 
-        });
+        }).catch(console.error);
     }
 
     const setupData = interaction.client.autopostSetup?.get(interaction.user.id) || {};
@@ -486,10 +487,10 @@ if (interaction.isModalSubmit() && interaction.customId === 'autopost_interval_m
         return interaction.reply({ 
             content: '❌ Setup data not found. Please start over with /autopost', 
             ephemeral: true 
-        });
+        }).catch(console.error);
     }
 
-    // Ask about auto-react
+    // Ask about auto-react with another modal
     const modal2 = new ModalBuilder()
         .setCustomId('autopost_react_modal')
         .setTitle('Auto-React (Optional)');
@@ -505,7 +506,35 @@ if (interaction.isModalSubmit() && interaction.customId === 'autopost_interval_m
     const row = new ActionRowBuilder().addComponents(reactInput);
     modal2.addComponents(row);
 
-    await interaction.showModal(modal2);
+    await interaction.showModal(modal2).catch(err => {
+        console.error('Error showing second modal:', err);
+        // If modal fails, just finalize without auto-react
+        const success = updateInterval(
+            interaction.client, 
+            intervalSec * 1000, 
+            setupData.channelId, 
+            setupData.roleId,
+            []
+        );
+        
+        if (success) {
+            const { EmbedBuilder } = require('discord.js');
+            const channel = interaction.client.channels.cache.get(setupData.channelId);
+            const embed = new EmbedBuilder()
+                .setColor('#00ff00')
+                .setTitle('Auto-Post Started')
+                .setDescription(`Memes will be posted every **${intervalSec} seconds** in ${channel}`)
+                .addFields(
+                    { name: 'Ping Role', value: setupData.roleId ? `<@&${setupData.roleId}>` : 'None', inline: true },
+                    { name: 'Auto-React', value: 'None', inline: true },
+                    { name: 'Next Post', value: `<t:${Math.floor((Date.now() + intervalSec * 1000) / 1000)}:R>`, inline: true }
+                )
+                .setTimestamp();
+
+            interaction.client.autopostSetup.delete(interaction.user.id);
+            interaction.reply({ embeds: [embed], ephemeral: true }).catch(console.error);
+        }
+    });
     return;
 }
 
