@@ -80,7 +80,4 @@ const botConfigSchema = new Schema({
     updatedBy: String
 });
 
-// Index for faster queries
-botConfigSchema.index({ botId: 1 });
-
 module.exports = models.BotConfig || model('BotConfig', botConfigSchema);
