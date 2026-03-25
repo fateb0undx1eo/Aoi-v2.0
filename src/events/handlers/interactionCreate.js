@@ -536,18 +536,7 @@ if (interaction.isModalSubmit() && interaction.customId === 'autopost_config_mod
     }
     return;
 }
-        return interaction.reply({ 
-            content: '❌ Setup data not found. Please start over with /autopost', 
-            ephemeral: true 
-        });
-    }
 
-    const success = updateInterval(
-        interaction.client, 
-        setupData.interval * 1000, 
-        setupData.channelId, 
-        setupData.roleId,
-        reactions
     );
 
     if (success) {
