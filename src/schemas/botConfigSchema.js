@@ -4,8 +4,7 @@ const botConfigSchema = new Schema({
     botId: {
         type: String,
         required: true,
-        unique: true,
-        index: true
+        unique: true
     },
     presence: {
         status: {
