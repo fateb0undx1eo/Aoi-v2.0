@@ -325,10 +325,10 @@ if (interaction.isButton() && interaction.customId.startsWith('autopost_')) {
         // Acknowledge immediately
         await interaction.deferUpdate().catch(console.error);
         
-        // Skip role selection, go to interval
+        // Skip role selection, go to config modal
         const modal = new ModalBuilder()
-            .setCustomId('autopost_interval_modal')
-            .setTitle('Set Posting Interval');
+            .setCustomId('autopost_config_modal')
+            .setTitle('Configure Auto-Post');
 
         const intervalInput = new TextInputBuilder()
             .setCustomId('interval')
@@ -339,8 +339,17 @@ if (interaction.isButton() && interaction.customId.startsWith('autopost_')) {
             .setMinLength(2)
             .setMaxLength(6);
 
-        const row = new ActionRowBuilder().addComponents(intervalInput);
-        modal.addComponents(row);
+        const reactInput = new TextInputBuilder()
+            .setCustomId('reactions')
+            .setLabel('Auto-react emojis (optional, space separated)')
+            .setStyle(TextInputStyle.Short)
+            .setPlaceholder('👍 👎 😂 (leave empty to skip)')
+            .setRequired(false)
+            .setMaxLength(100);
+
+        const row1 = new ActionRowBuilder().addComponents(intervalInput);
+        const row2 = new ActionRowBuilder().addComponents(reactInput);
+        modal.addComponents(row1, row2);
 
         await interaction.showModal(modal).catch(console.error);
         return;
@@ -441,10 +450,10 @@ if (interaction.isRoleSelectMenu() && interaction.customId === 'autopost_role_se
     setupData.roleId = selectedRole?.id;
     interaction.client.autopostSetup.set(interaction.user.id, setupData);
 
-    // Show modal for interval
+    // Show modal for interval AND reactions (combined)
     const modal = new ModalBuilder()
-        .setCustomId('autopost_interval_modal')
-        .setTitle('Set Posting Interval');
+        .setCustomId('autopost_config_modal')
+        .setTitle('Configure Auto-Post');
 
     const intervalInput = new TextInputBuilder()
         .setCustomId('interval')
@@ -455,8 +464,17 @@ if (interaction.isRoleSelectMenu() && interaction.customId === 'autopost_role_se
         .setMinLength(2)
         .setMaxLength(6);
 
-    const row = new ActionRowBuilder().addComponents(intervalInput);
-    modal.addComponents(row);
+    const reactInput = new TextInputBuilder()
+        .setCustomId('reactions')
+        .setLabel('Auto-react emojis (optional, space separated)')
+        .setStyle(TextInputStyle.Short)
+        .setPlaceholder('👍 👎 😂 (leave empty to skip)')
+        .setRequired(false)
+        .setMaxLength(100);
+
+    const row1 = new ActionRowBuilder().addComponents(intervalInput);
+    const row2 = new ActionRowBuilder().addComponents(reactInput);
+    modal.addComponents(row1, row2);
 
     await interaction.showModal(modal).catch(err => {
         console.error('Error showing modal:', err);
@@ -465,12 +483,14 @@ if (interaction.isRoleSelectMenu() && interaction.customId === 'autopost_role_se
     return;
 }
 
-// Handle modal submission for autopost interval
-if (interaction.isModalSubmit() && interaction.customId === 'autopost_interval_modal') {
+// Handle modal submission for autopost config (interval + reactions)
+if (interaction.isModalSubmit() && interaction.customId === 'autopost_config_modal') {
     const { updateInterval } = require('../../functions/handlers/autoPoster');
-    const { ModalBuilder, TextInputBuilder, TextInputStyle, ActionRowBuilder } = require('discord.js');
+    const { EmbedBuilder } = require('discord.js');
     
     const intervalSec = parseInt(interaction.fields.getTextInputValue('interval'));
+    const reactionsInput = interaction.fields.getTextInputValue('reactions').trim();
+    const reactions = reactionsInput ? reactionsInput.split(/\s+/) : [];
     
     if (isNaN(intervalSec) || intervalSec < 10) {
         return interaction.reply({ 
@@ -479,75 +499,43 @@ if (interaction.isModalSubmit() && interaction.customId === 'autopost_interval_m
         }).catch(console.error);
     }
 
-    const setupData = interaction.client.autopostSetup?.get(interaction.user.id) || {};
-    setupData.interval = intervalSec;
-    interaction.client.autopostSetup.set(interaction.user.id, setupData);
-
-    if (!setupData.channelId) {
+    const setupData = interaction.client.autopostSetup?.get(interaction.user.id);
+    
+    if (!setupData || !setupData.channelId) {
         return interaction.reply({ 
             content: '❌ Setup data not found. Please start over with /autopost', 
             ephemeral: true 
         }).catch(console.error);
     }
 
-    // Ask about auto-react with another modal
-    const modal2 = new ModalBuilder()
-        .setCustomId('autopost_react_modal')
-        .setTitle('Auto-React (Optional)');
+    const success = updateInterval(
+        interaction.client, 
+        intervalSec * 1000, 
+        setupData.channelId, 
+        setupData.roleId,
+        reactions
+    );
 
-    const reactInput = new TextInputBuilder()
-        .setCustomId('reactions')
-        .setLabel('Emojis to auto-react (space separated)')
-        .setStyle(TextInputStyle.Short)
-        .setPlaceholder('👍 👎 😂 (leave empty to skip)')
-        .setRequired(false)
-        .setMaxLength(100);
+    if (success) {
+        const channel = interaction.client.channels.cache.get(setupData.channelId);
+        const embed = new EmbedBuilder()
+            .setColor('#00ff00')
+            .setTitle('Auto-Post Started')
+            .setDescription(`Memes will be posted every **${intervalSec} seconds** in ${channel}`)
+            .addFields(
+                { name: 'Ping Role', value: setupData.roleId ? `<@&${setupData.roleId}>` : 'None', inline: true },
+                { name: 'Auto-React', value: reactions.length > 0 ? reactions.join(' ') : 'None', inline: true },
+                { name: 'Next Post', value: `<t:${Math.floor((Date.now() + intervalSec * 1000) / 1000)}:R>`, inline: true }
+            )
+            .setTimestamp();
 
-    const row = new ActionRowBuilder().addComponents(reactInput);
-    modal2.addComponents(row);
-
-    await interaction.showModal(modal2).catch(err => {
-        console.error('Error showing second modal:', err);
-        // If modal fails, just finalize without auto-react
-        const success = updateInterval(
-            interaction.client, 
-            intervalSec * 1000, 
-            setupData.channelId, 
-            setupData.roleId,
-            []
-        );
-        
-        if (success) {
-            const { EmbedBuilder } = require('discord.js');
-            const channel = interaction.client.channels.cache.get(setupData.channelId);
-            const embed = new EmbedBuilder()
-                .setColor('#00ff00')
-                .setTitle('Auto-Post Started')
-                .setDescription(`Memes will be posted every **${intervalSec} seconds** in ${channel}`)
-                .addFields(
-                    { name: 'Ping Role', value: setupData.roleId ? `<@&${setupData.roleId}>` : 'None', inline: true },
-                    { name: 'Auto-React', value: 'None', inline: true },
-                    { name: 'Next Post', value: `<t:${Math.floor((Date.now() + intervalSec * 1000) / 1000)}:R>`, inline: true }
-                )
-                .setTimestamp();
-
-            interaction.client.autopostSetup.delete(interaction.user.id);
-            interaction.reply({ embeds: [embed], ephemeral: true }).catch(console.error);
-        }
-    });
+        interaction.client.autopostSetup.delete(interaction.user.id);
+        await interaction.reply({ embeds: [embed], ephemeral: true }).catch(console.error);
+    } else {
+        await interaction.reply({ content: '❌ Failed to start auto-post.', ephemeral: true }).catch(console.error);
+    }
     return;
 }
-
-// Handle auto-react modal
-if (interaction.isModalSubmit() && interaction.customId === 'autopost_react_modal') {
-    const { updateInterval } = require('../../functions/handlers/autoPoster');
-    
-    const reactionsInput = interaction.fields.getTextInputValue('reactions').trim();
-    const reactions = reactionsInput ? reactionsInput.split(/\s+/) : [];
-
-    const setupData = interaction.client.autopostSetup?.get(interaction.user.id);
-    
-    if (!setupData || !setupData.channelId || !setupData.interval) {
         return interaction.reply({ 
             content: '❌ Setup data not found. Please start over with /autopost', 
             ephemeral: true 
