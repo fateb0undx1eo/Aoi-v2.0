@@ -431,6 +431,8 @@ if (interaction.isChannelSelectMenu() && interaction.customId === 'autopost_chan
 
 // Handle role select for autopost
 if (interaction.isRoleSelectMenu() && interaction.customId === 'autopost_role_select') {
+    const { ModalBuilder, TextInputBuilder, TextInputStyle, ActionRowBuilder } = require('discord.js');
+    
     const selectedRole = interaction.roles.first();
     
     if (!interaction.client.autopostSetup) interaction.client.autopostSetup = new Map();
@@ -456,8 +458,12 @@ if (interaction.isRoleSelectMenu() && interaction.customId === 'autopost_role_se
     const row = new ActionRowBuilder().addComponents(intervalInput);
     modal.addComponents(row);
 
-    await interaction.showModal(modal);
+    await interaction.showModal(modal).catch(err => {
+        console.error('Error showing modal:', err);
+        interaction.reply({ content: '❌ Failed to open modal. Please try again.', ephemeral: true }).catch(() => {});
+    });
     return;
+}
 }
 
 // Handle modal submission for autopost interval
