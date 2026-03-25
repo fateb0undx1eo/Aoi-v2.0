@@ -1,10 +1,13 @@
-﻿const { EmbedBuilder } = require("discord.js");
+const { EmbedBuilder } = require("discord.js");
+const { getRoleplayGIF } = require("../utils/roleplayAPI");
+const { getRoleplayPrefix } = require("../utils/prefixHelper");
+const logger = require("../utils/winstonLogger");
 
 const getRandomColor = () => Math.floor(Math.random() * 0xFFFFFF);
 
 module.exports = {
   name: "facepalm",
-  description: "Facepalm at something",
+  description: "Facepalm",
   usage: "facepalm",
   category: "roleplay",
   prefixOnly: true,
@@ -16,19 +19,21 @@ module.exports = {
       await message.delete();
     } catch (err) {}
 
+
     try {
-      const res = await fetch("https://nekos.best/api/v2/facepalm");
-      const data = await res.json();
+      const gifUrl = await getRoleplayGIF('facepalm');
 
       const embed = new EmbedBuilder()
         .setDescription(`${message.author} facepalms`)
-        .setImage(data.results[0].url)
+        .setImage(gifUrl)
         .setColor(getRandomColor());
 
       await message.channel.send({ embeds: [embed] });
+      
+      logger.command('facepalm', message.author.id, message.guild.id, true);
     } catch (err) {
-      console.error("Facepalm Error:", err);
-      await message.channel.send("❌ Failed to fetch facepalm image.");
+      logger.error("Facepalm command error:", err);
+      await message.channel.send("Failed to fetch facepalm image.");
     }
   },
 };

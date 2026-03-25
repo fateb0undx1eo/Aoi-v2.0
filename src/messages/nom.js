@@ -1,10 +1,13 @@
-﻿const { EmbedBuilder } = require("discord.js");
+const { EmbedBuilder } = require("discord.js");
+const { getRoleplayGIF } = require("../utils/roleplayAPI");
+const { getRoleplayPrefix } = require("../utils/prefixHelper");
+const logger = require("../utils/winstonLogger");
 
 const getRandomColor = () => Math.floor(Math.random() * 0xFFFFFF);
 
 module.exports = {
   name: "nom",
-  description: "Nom nom nom",
+  description: "Nom",
   usage: "nom",
   category: "roleplay",
   prefixOnly: true,
@@ -16,19 +19,21 @@ module.exports = {
       await message.delete();
     } catch (err) {}
 
+
     try {
-      const res = await fetch("https://nekos.best/api/v2/nom");
-      const data = await res.json();
+      const gifUrl = await getRoleplayGIF('nom');
 
       const embed = new EmbedBuilder()
-        .setDescription(`${message.author} is nomming`)
-        .setImage(data.results[0].url)
+        .setDescription(`${message.author} noms`)
+        .setImage(gifUrl)
         .setColor(getRandomColor());
 
       await message.channel.send({ embeds: [embed] });
+      
+      logger.command('nom', message.author.id, message.guild.id, true);
     } catch (err) {
-      console.error("Nom Error:", err);
-      await message.channel.send("❌ Failed to fetch nom image.");
+      logger.error("Nom command error:", err);
+      await message.channel.send("Failed to fetch nom image.");
     }
   },
 };

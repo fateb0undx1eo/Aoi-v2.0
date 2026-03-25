@@ -1,5 +1,5 @@
 const { SlashCommandBuilder, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
-const Prefix = require('../../../schemas/prefixSchema');
+const { getRoleplayPrefix } = require('../../../utils/prefixHelper');
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -7,9 +7,8 @@ module.exports = {
     .setDescription('View all available roleplay commands'),
 
   async execute(interaction) {
-    // Get prefix from database
-    let prefix = await Prefix.findOne({ guildId: interaction.guild.id });
-    const guildPrefix = prefix ? prefix.prefix : '#';
+    // Fetch roleplay prefix from database
+    const ROLEPLAY_PREFIX = await getRoleplayPrefix(interaction.guild?.id);
 
     let currentPage = 0;
 
@@ -34,21 +33,21 @@ module.exports = {
     const pages = [
       // Page 1: Commands with @user
       {
-        title: '⊹﹒ＲＯＬＥＰＬＡＹ ＣＯＭＭＡＮＤＳ﹒⊹﹒',
-        description: `**Commands that require @user mention**\n\n${targetCommands.map(cmd => `❖ \`${guildPrefix}${cmd} @user\``).join('\n')}\n\n﹒⟡﹒✧﹒⟡﹒`,
-        footer: 'Page 1/3 • Commands with @user'
+        title: 'ROLEPLAY COMMANDS',
+        description: `**Commands that require @user mention**\n\n${targetCommands.map(cmd => `\`${ROLEPLAY_PREFIX}${cmd} @user\``).join('\n')}\n\n`,
+        footer: 'Page 1/3 - Commands with @user'
       },
       // Page 2: Solo commands
       {
-        title: '⊹﹒ＲＯＬＥＰＬＡＹ ＣＯＭＭＡＮＤＳ﹒⊹﹒',
-        description: `**Solo action commands**\n\n${soloCommands.map(cmd => `❖ \`${guildPrefix}${cmd}\``).join('\n')}\n\n﹒⟡﹒✧﹒⟡﹒`,
-        footer: 'Page 2/3 • Solo actions'
+        title: 'ROLEPLAY COMMANDS',
+        description: `**Solo action commands**\n\n${soloCommands.map(cmd => `\`${ROLEPLAY_PREFIX}${cmd}\``).join('\n')}\n\n`,
+        footer: 'Page 2/3 - Solo actions'
       },
       // Page 3: Bonus commands
       {
-        title: '⊹﹒ＢＯＮＵＳ ＣＯＭＭＡＮＤＳ﹒⊹﹒',
-        description: `**Special claim commands**\n\n${bonusCommands.map(cmd => `❖ \`${guildPrefix}${cmd}\` - Claim a random ${cmd}!`).join('\n')}\n\n**Note:** Check the bot's bio to see the current prefix!\n\n﹒⟡﹒✧﹒⟡﹒`,
-        footer: 'Page 3/3 • Bonus commands'
+        title: 'BONUS COMMANDS',
+        description: `**Special claim commands**\n\n${bonusCommands.map(cmd => `\`${ROLEPLAY_PREFIX}${cmd}\` - Claim a random ${cmd}!`).join('\n')}\n\n**Note:** All roleplay commands use the \`${ROLEPLAY_PREFIX}\` prefix!\n\n`,
+        footer: 'Page 3/3 - Bonus commands'
       }
     ];
 
@@ -67,12 +66,12 @@ module.exports = {
         .addComponents(
           new ButtonBuilder()
             .setCustomId('prev')
-            .setLabel('◀ Previous')
+            .setLabel('Previous')
             .setStyle(ButtonStyle.Secondary)
             .setDisabled(pageIndex === 0),
           new ButtonBuilder()
             .setCustomId('next')
-            .setLabel('Next ▶')
+            .setLabel('Next')
             .setStyle(ButtonStyle.Secondary)
             .setDisabled(pageIndex === pages.length - 1)
         );
@@ -124,12 +123,12 @@ module.exports = {
               .addComponents(
                 new ButtonBuilder()
                   .setCustomId('prev')
-                  .setLabel('◀ Previous')
+                  .setLabel('Previous')
                   .setStyle(ButtonStyle.Secondary)
                   .setDisabled(true),
                 new ButtonBuilder()
                   .setCustomId('next')
-                  .setLabel('Next ▶')
+                  .setLabel('Next')
                   .setStyle(ButtonStyle.Secondary)
                   .setDisabled(true)
               )

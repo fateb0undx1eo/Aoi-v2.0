@@ -1,10 +1,13 @@
-﻿const { EmbedBuilder } = require("discord.js");
+const { EmbedBuilder } = require("discord.js");
+const { getRoleplayGIF } = require("../utils/roleplayAPI");
+const { getRoleplayPrefix } = require("../utils/prefixHelper");
+const logger = require("../utils/winstonLogger");
 
 const getRandomColor = () => Math.floor(Math.random() * 0xFFFFFF);
 
 module.exports = {
   name: "smug",
-  description: "Look smug",
+  description: "Be smug",
   usage: "smug",
   category: "roleplay",
   prefixOnly: true,
@@ -16,19 +19,21 @@ module.exports = {
       await message.delete();
     } catch (err) {}
 
+
     try {
-      const res = await fetch("https://nekos.best/api/v2/smug");
-      const data = await res.json();
+      const gifUrl = await getRoleplayGIF('smug');
 
       const embed = new EmbedBuilder()
-        .setDescription(`${message.author} looks smug`)
-        .setImage(data.results[0].url)
+        .setDescription(`${message.author} smugs`)
+        .setImage(gifUrl)
         .setColor(getRandomColor());
 
       await message.channel.send({ embeds: [embed] });
+      
+      logger.command('smug', message.author.id, message.guild.id, true);
     } catch (err) {
-      console.error("Smug Error:", err);
-      await message.channel.send("❌ Failed to fetch smug image.");
+      logger.error("Smug command error:", err);
+      await message.channel.send("Failed to fetch smug image.");
     }
   },
 };

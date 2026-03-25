@@ -1,5 +1,7 @@
 ﻿const { EmbedBuilder } = require("discord.js");
-const Prefix = require("../schemas/prefixSchema");
+const { getRoleplayGIF } = require("../utils/roleplayAPI");
+const { getRoleplayPrefix } = require("../utils/prefixHelper");
+const logger = require("../utils/winstonLogger");
 
 const getRandomColor = () => Math.floor(Math.random() * 0xFFFFFF);
 
@@ -17,42 +19,41 @@ module.exports = {
       await message.delete();
     } catch (err) {}
 
-    const prefix = await Prefix.findOne({ guildId: message.guild.id });
-    const guildPrefix = prefix ? prefix.prefix : "!";
-
     const target = message.mentions.users.first();
+    const roleplayPrefix = await getRoleplayPrefix(message.guild?.id);
     
     if (!target) {
-      const errorMsg = await message.channel.send(`❌ Please mention someone to kiss! Usage: \`${guildPrefix}kiss @user\``);
+      const errorMsg = await message.channel.send(`Please mention someone to kiss! Usage: \`${roleplayPrefix}kiss @user\``);
       setTimeout(() => errorMsg.delete().catch(() => {}), 5000);
       return;
     }
 
     if (target.id === message.author.id) {
-      const errorMsg = await message.channel.send("❌ You can't kiss yourself!");
+      const errorMsg = await message.channel.send("You can't kiss yourself!");
       setTimeout(() => errorMsg.delete().catch(() => {}), 5000);
       return;
     }
 
     if (target.bot) {
-      const errorMsg = await message.channel.send("❌ You can't kiss bots!");
+      const errorMsg = await message.channel.send("You can't kiss bots!");
       setTimeout(() => errorMsg.delete().catch(() => {}), 5000);
       return;
     }
 
     try {
-      const res = await fetch("https://nekos.best/api/v2/kiss");
-      const data = await res.json();
+      const gifUrl = await getRoleplayGIF('kiss');
 
       const embed = new EmbedBuilder()
         .setDescription(`${message.author} kisses ${target}`)
-        .setImage(data.results[0].url)
+        .setImage(gifUrl)
         .setColor(getRandomColor());
 
       await message.channel.send({ embeds: [embed] });
+      
+      logger.command('kiss', message.author.id, message.guild.id, true);
     } catch (err) {
-      console.error("Kiss Error:", err);
-      await message.channel.send("❌ Failed to fetch kiss image.");
+      logger.error("Kiss command error:", err);
+      await message.channel.send("Failed to fetch kiss image.");
     }
   },
 };

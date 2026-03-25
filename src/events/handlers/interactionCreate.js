@@ -6,6 +6,8 @@ const fs = require('fs');
 const mongoose = require('mongoose');
 const afkSchema = require('../../schemas/afkSchema');
 const { logErrorToFile } = require('../../utils/errorLogger');
+const { handleCommandError } = require('../../utils/errorHandler');
+const logger = require('../../utils/winstonLogger');
 
 
 
@@ -47,10 +49,12 @@ async function trackCommandStats(interaction, command, client) {
                     username: String,
                     uses: { type: Number, default: 0 }
                 }],
-                lastUsed: { type: Date, default: Date.now }
+                lastUsed: { type: Date, default: Date.now, index: true }
             });
             // Create compound index for efficient queries
             commandStatsSchema.index({ commandName: 1, commandType: 1 }, { unique: true });
+            commandStatsSchema.index({ totalUses: -1 }); // For sorting by popularity
+            commandStatsSchema.index({ lastUsed: -1 }); // For recent commands
             CommandStats = mongoose.model('CommandStats', commandStatsSchema);
         }
 
@@ -116,144 +120,41 @@ async function trackCommandStats(interaction, command, client) {
 module.exports = {
     name: 'interactionCreate',
     async execute(interaction, client) {
-        // ================= COMPONENT HANDLER =================
+        // ================= AUTOCOMPLETE HANDLER =================
+        if (interaction.isAutocomplete()) {
+            const command = client.commands.get(interaction.commandName);
+            
+            if (!command || !command.autocomplete) {
+                return;
+            }
 
-// Handle leaderboard select menu
-if (interaction.isStringSelectMenu() && interaction.customId === "chess_leaderboard_mode") {
-
-    const { getLeaderboard } = require("../../functions/handlers/chessService");
-    const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require("discord.js");
-
-    await interaction.deferUpdate(); // VERY IMPORTANT
-
-    const mode = interaction.values[0];
-    const leaderboard = await getLeaderboard(mode);
-
-    if (!leaderboard || leaderboard.length === 0) {
-        return interaction.editReply({
-            content: "No leaderboard data found.",
-            components: []
-        });
-    }
-
-    let page = 0;
-    const pageSize = 10;
-    const totalPages = Math.ceil(leaderboard.length / pageSize);
-
-    const generateEmbed = () => {
-        const start = page * pageSize;
-        const current = leaderboard.slice(start, start + pageSize);
-
-        return new EmbedBuilder()
-            .setColor("#2b2d31")
-            .setTitle(`🏆 ${mode.replace("live_", "").toUpperCase()} Leaderboard`)
-            .setDescription(
-                current.map((player, index) => {
-    const profileUrl = `https://www.chess.com/member/${player.username}`;
-    return `**${start + index + 1}.** [${player.username}](${profileUrl}) — ${player.score}`;
-})
-.join("\n")
-            )
-            .setFooter({ text: `Page ${page + 1} of ${totalPages}` });
-    };
-
-    const buttons = () => new ActionRowBuilder().addComponents(
-        new ButtonBuilder()
-            .setCustomId("lb_prev")
-            .setLabel("Previous")
-            .setStyle(ButtonStyle.Secondary)
-            .setDisabled(page === 0),
-
-        new ButtonBuilder()
-            .setCustomId("lb_next")
-            .setLabel("Next")
-            .setStyle(ButtonStyle.Secondary)
-            .setDisabled(page >= totalPages - 1)
-    );
-
-    const message = await interaction.editReply({
-        embeds: [generateEmbed()],
-        components: [buttons()]
-    });
-
-    const collector = message.createMessageComponentCollector({ time: 60000 });
-
-    collector.on("collect", async (i) => {
-
-        if (!i.isButton()) return;
-
-        if (i.customId === "lb_next" && page < totalPages - 1) page++;
-        if (i.customId === "lb_prev" && page > 0) page--;
-
-        await i.update({
-            embeds: [generateEmbed()],
-            components: [buttons()]
-        });
-    });
-
-    return;
-}
-// ================= AFK BUTTON HANDLER =================
-if (interaction.isButton() && interaction.customId.startsWith('afk_')) {
-
-    // Instantly acknowledge interaction (prevents Unknown Interaction error)
-    await interaction.deferUpdate().catch(() => {});
-
-    const parts = interaction.customId.split('_');
-    const choice = parts[1];
-    const ownerId = parts[2];
-
-    // Prevent others from pressing
-    if (interaction.user.id !== ownerId) {
-        return interaction.followUp({
-            content: "This button isn't for you.",
-            ephemeral: true
-        }).catch(() => {});
-    }
-
-    const dmNotify = choice === 'yes';
-
-    try {
-        const originalEmbed = interaction.message.embeds[0];
-        let reason = "No reason provided";
-
-        if (originalEmbed?.description) {
-            const firstLine = originalEmbed.description.split('\n')[0];
-            reason = firstLine.replace('**Reason:** ', '') || reason;
+            try {
+                await command.autocomplete(interaction);
+            } catch (error) {
+                logger.error('Autocomplete error:', {
+                    command: interaction.commandName,
+                    error: error.message
+                });
+            }
+            return;
         }
 
-        await afkSchema.findOneAndUpdate(
-            { userId: interaction.user.id, guildId: interaction.guildId },
-            {
-                reason,
-                timestamp: Date.now(),
-                dmNotify
-            },
-            { upsert: true }
-        );
+        // ================= COMPONENT HANDLERS =================
+        
+        // Chess interactions (leaderboard, pagination)
+        const { handleChessInteractions } = require('./chessInteractions');
+        const chessHandled = await handleChessInteractions(interaction);
+        if (chessHandled) return;
 
-        await interaction.editReply({
-            embeds: [
-                new EmbedBuilder()
-                    .setColor('Green')
-                    .setDescription(
-                        `AFK set successfully!\n\n**DM Notifications:** ${dmNotify ? 'Enabled' : 'Disabled'}`
-                    )
-            ],
-            components: []
-        });
+        // AFK button interactions
+        const { handleAfkInteractions } = require('./afkInteractions');
+        const afkHandled = await handleAfkInteractions(interaction);
+        if (afkHandled) return;
 
-    } catch (err) {
-        console.error("AFK Button Error:", err);
-    }
-
-    return; // IMPORTANT — prevents falling into slash command logic
-}
-
-// ================= AUTOPOST HANDLERS =================
-const { handleAutopostInteractions } = require('./autopostInteractions');
-const autopostHandled = await handleAutopostInteractions(interaction);
-if (autopostHandled) return;
+        // Autopost interactions
+        const { handleAutopostInteractions } = require('./autopostInteractions');
+        const autopostHandled = await handleAutopostInteractions(interaction);
+        if (autopostHandled) return;
 
 
 
@@ -409,7 +310,6 @@ if (autopostHandled) return;
             try {
                 await command.execute(interaction, client);
 
-
                 // Track command statistics if enabled
                 await trackCommandStats(interaction, command, client);
 
@@ -426,7 +326,6 @@ if (autopostHandled) return;
                     }
 **Timestamp** : <t:${Math.floor(Date.now() / 1000)}:F>`
                 );
-
 
                 const section = new SectionBuilder()
                     .addTextDisplayComponents(text)
@@ -445,15 +344,19 @@ if (autopostHandled) return;
                     if (logsChannel) {
                         await logsChannel.send({ components: [logContainer], flags: MessageFlags.IsComponentsV2 });
                     } else {
-                        console.error(chalk.yellow(`Logs channel with ID ${config.logging.commandLogsChannelId} not found.`));
+                        logger.warn(`Logs channel with ID ${config.logging.commandLogsChannelId} not found.`);
                     }
                 }
             } catch (error) {
-                console.error(chalk.red(`Error executing command "${command.data.name}": `), error);
-                logErrorToFile(error);
-                if (!interaction.replied && !interaction.deferred) {
-                    interaction.reply({ content: 'There was an error while executing this command!', flags: MessageFlags.Ephemeral }).catch(err => console.error('Failed to send error response:', err));
-                }
+                logger.error(`Error executing command "${command.data.name}":`, {
+                    error: error.message,
+                    stack: error.stack,
+                    user: interaction.user.tag,
+                    guild: interaction.guild?.name
+                });
+                
+                // Use centralized error handler
+                await handleCommandError(interaction, error);
             }
 
         }

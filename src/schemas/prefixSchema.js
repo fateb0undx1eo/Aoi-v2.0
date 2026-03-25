@@ -12,6 +12,11 @@ const prefixSchema = new Schema({
         required: true,
         default: '!'
     },
+    roleplayPrefix: {
+        type: String,
+        required: true,
+        default: 'r!'
+    },
     updatedAt: {
         type: Date,
         default: Date.now

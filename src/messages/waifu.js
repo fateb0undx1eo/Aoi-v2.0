@@ -5,33 +5,27 @@ const WaifuConfig = require("../schemas/waifuConfigSchema");
 const globalCooldowns = new Map(); // guildId -> timestamp
 const userCooldowns = new Map();   // userId -> timestamp
 
-// API endpoints
-const WAIFU_APIS = [
-  { url: "https://api.waifu.pics/sfw/waifu", format: "url" },
-  { url: "https://api.waifu.im/search/?included_tags=waifu&is_nsfw=false", format: "waifu.im" },
-  { url: "https://nekos.best/api/v2/neko", format: "nekos.best" }
-];
+// Use waifu.it API for high quality images
+const WAIFU_API_URL = "https://waifu.it/api/v4/waifu";
 
 // ==================== HELPER FUNCTIONS ====================
 
 async function fetchWaifuImage() {
-  for (const api of WAIFU_APIS) {
-    try {
-      const res = await fetch(api.url);
-      const data = await res.json();
-      
-      if (api.format === "url") {
-        return data.url;
-      } else if (api.format === "waifu.im") {
-        return data.images?.[0]?.url;
-      } else if (api.format === "nekos.best") {
-        return data.results?.[0]?.url;
-      }
-    } catch (err) {
-      continue;
+  try {
+    const res = await fetch(WAIFU_API_URL);
+    if (!res.ok) {
+      throw new Error(`HTTP ${res.status}`);
     }
+    const data = await res.json();
+    
+    if (!data || !data.url) {
+      throw new Error("Invalid API response");
+    }
+    
+    return data.url;
+  } catch (err) {
+    throw new Error("Failed to fetch waifu image");
   }
-  throw new Error("All APIs failed");
 }
 
 function checkCooldown(guildId, userId, config) {
@@ -82,8 +76,8 @@ module.exports = {
     if (cooldownCheck.onCooldown) {
       const errorMsg = await message.channel.send(
         cooldownCheck.type === "global" 
-          ? `⏰ Server cooldown active. Try again in ${cooldownCheck.remaining}s`
-          : `⏰ You're on cooldown. Try again in ${cooldownCheck.remaining}s`
+          ? `Server cooldown active. Try again in ${cooldownCheck.remaining}s`
+          : `You're on cooldown. Try again in ${cooldownCheck.remaining}s`
       );
       try {
         await message.delete();
@@ -105,12 +99,12 @@ module.exports = {
     try {
       imageUrl = await fetchWaifuImage();
     } catch (err) {
-      return message.channel.send("❌ Failed to fetch waifu image. Try again later.");
+      return message.channel.send("Failed to fetch waifu image. Try again later.");
     }
 
     // Create embed
     const embed = new EmbedBuilder()
-      .setTitle("✨ A Wild Waifu Appeared!")
+      .setTitle("A Wild Waifu Appeared!")
       .setDescription("**Status:** Unclaimed\n\nWill you claim her?")
       .setImage(imageUrl)
       .setColor(0xff69b4)
@@ -146,7 +140,7 @@ module.exports = {
       // Handle Smash
       if (interaction.customId === "waifu_smash") {
         if (isClaimed) {
-          return interaction.reply({ content: "❌ This waifu has already been claimed!", ephemeral: true });
+          return interaction.reply({ content: "This waifu has already been claimed!", ephemeral: true });
         }
 
         // Claim the waifu
@@ -156,7 +150,7 @@ module.exports = {
 
         // Update embed
         const claimedEmbed = new EmbedBuilder()
-          .setTitle("✨ Waifu Claimed!")
+          .setTitle("Waifu Claimed!")
           .setDescription(`**Claimed by:** ${claimedBy}\n**Time:** ${claimedAt.toLocaleTimeString()}`)
           .setImage(imageUrl)
           .setColor(0x00ff00)
@@ -178,12 +172,12 @@ module.exports = {
           );
 
         await cardMessage.edit({ embeds: [claimedEmbed], components: [disabledRow] });
-        await interaction.reply({ content: "✅ You claimed this waifu!", ephemeral: true });
+        await interaction.reply({ content: "You claimed this waifu!", ephemeral: true });
 
         // Send DM
         try {
           const dmEmbed = new EmbedBuilder()
-            .setTitle("💖 Your Claimed Waifu")
+            .setTitle("Your Claimed Waifu")
             .setDescription(`**Server:** ${message.guild.name}\n**Claimed at:** ${claimedAt.toLocaleString()}`)
             .setImage(imageUrl)
             .setColor(0xff69b4)
@@ -191,7 +185,7 @@ module.exports = {
 
           await claimedBy.send({ embeds: [dmEmbed] });
         } catch (err) {
-          await interaction.followUp({ content: "⚠️ Couldn't send DM. Please enable DMs from server members.", ephemeral: true });
+          await interaction.followUp({ content: "Couldn't send DM. Please enable DMs from server members.", ephemeral: true });
         }
 
         // Delete after display time
@@ -209,10 +203,10 @@ module.exports = {
       // Handle Pass
       if (interaction.customId === "waifu_pass") {
         if (isClaimed) {
-          return interaction.reply({ content: "❌ This waifu has already been claimed!", ephemeral: true });
+          return interaction.reply({ content: "This waifu has already been claimed!", ephemeral: true });
         }
 
-        await interaction.reply({ content: "👋 You passed on this waifu.", ephemeral: true });
+        await interaction.reply({ content: "You passed on this waifu.", ephemeral: true });
         
         try {
           await cardMessage.delete();

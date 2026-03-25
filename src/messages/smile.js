@@ -1,10 +1,13 @@
-﻿const { EmbedBuilder } = require("discord.js");
+const { EmbedBuilder } = require("discord.js");
+const { getRoleplayGIF } = require("../utils/roleplayAPI");
+const { getRoleplayPrefix } = require("../utils/prefixHelper");
+const logger = require("../utils/winstonLogger");
 
 const getRandomColor = () => Math.floor(Math.random() * 0xFFFFFF);
 
 module.exports = {
   name: "smile",
-  description: "Show a bright smile!",
+  description: "Smile",
   usage: "smile",
   category: "roleplay",
   prefixOnly: true,
@@ -16,19 +19,21 @@ module.exports = {
       await message.delete();
     } catch (err) {}
 
+
     try {
-      const res = await fetch("https://nekos.best/api/v2/smile");
-      const data = await res.json();
+      const gifUrl = await getRoleplayGIF('smile');
 
       const embed = new EmbedBuilder()
-        .setDescription(`${message.author} is smiling`)
-        .setImage(data.results[0].url)
+        .setDescription(`${message.author} smiles`)
+        .setImage(gifUrl)
         .setColor(getRandomColor());
 
       await message.channel.send({ embeds: [embed] });
+      
+      logger.command('smile', message.author.id, message.guild.id, true);
     } catch (err) {
-      console.error("Smile Error:", err);
-      await message.channel.send("❌ Failed to fetch smile image.");
+      logger.error("Smile command error:", err);
+      await message.channel.send("Failed to fetch smile image.");
     }
   },
 };

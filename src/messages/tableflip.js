@@ -1,10 +1,13 @@
-﻿const { EmbedBuilder } = require("discord.js");
+const { EmbedBuilder } = require("discord.js");
+const { getRoleplayGIF } = require("../utils/roleplayAPI");
+const { getRoleplayPrefix } = require("../utils/prefixHelper");
+const logger = require("../utils/winstonLogger");
 
 const getRandomColor = () => Math.floor(Math.random() * 0xFFFFFF);
 
 module.exports = {
   name: "tableflip",
-  description: "Flip a table in frustration",
+  description: "Flip a table",
   usage: "tableflip",
   category: "roleplay",
   prefixOnly: true,
@@ -16,19 +19,21 @@ module.exports = {
       await message.delete();
     } catch (err) {}
 
+
     try {
-      const res = await fetch("https://nekos.best/api/v2/tableflip");
-      const data = await res.json();
+      const gifUrl = await getRoleplayGIF('tableflip');
 
       const embed = new EmbedBuilder()
-        .setDescription(`${message.author} flips a table`)
-        .setImage(data.results[0].url)
+        .setDescription(`${message.author} tableflips`)
+        .setImage(gifUrl)
         .setColor(getRandomColor());
 
       await message.channel.send({ embeds: [embed] });
+      
+      logger.command('tableflip', message.author.id, message.guild.id, true);
     } catch (err) {
-      console.error("Tableflip Error:", err);
-      await message.channel.send("❌ Failed to fetch tableflip image.");
+      logger.error("Tableflip command error:", err);
+      await message.channel.send("Failed to fetch tableflip image.");
     }
   },
 };

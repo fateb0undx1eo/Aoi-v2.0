@@ -1,10 +1,13 @@
-﻿const { EmbedBuilder } = require("discord.js");
+const { EmbedBuilder } = require("discord.js");
+const { getRoleplayGIF } = require("../utils/roleplayAPI");
+const { getRoleplayPrefix } = require("../utils/prefixHelper");
+const logger = require("../utils/winstonLogger");
 
 const getRandomColor = () => Math.floor(Math.random() * 0xFFFFFF);
 
 module.exports = {
   name: "sleep",
-  description: "Go to sleep",
+  description: "Sleep",
   usage: "sleep",
   category: "roleplay",
   prefixOnly: true,
@@ -16,19 +19,21 @@ module.exports = {
       await message.delete();
     } catch (err) {}
 
+
     try {
-      const res = await fetch("https://nekos.best/api/v2/sleep");
-      const data = await res.json();
+      const gifUrl = await getRoleplayGIF('sleep');
 
       const embed = new EmbedBuilder()
-        .setDescription(`${message.author} is sleeping`)
-        .setImage(data.results[0].url)
+        .setDescription(`${message.author} sleeps`)
+        .setImage(gifUrl)
         .setColor(getRandomColor());
 
       await message.channel.send({ embeds: [embed] });
+      
+      logger.command('sleep', message.author.id, message.guild.id, true);
     } catch (err) {
-      console.error("Sleep Error:", err);
-      await message.channel.send("❌ Failed to fetch sleep image.");
+      logger.error("Sleep command error:", err);
+      await message.channel.send("Failed to fetch sleep image.");
     }
   },
 };

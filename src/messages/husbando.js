@@ -5,33 +5,27 @@ const WaifuConfig = require("../schemas/waifuConfigSchema");
 const globalCooldowns = new Map(); // guildId -> timestamp
 const userCooldowns = new Map();   // userId -> timestamp
 
-// API endpoints for husbando images
-const HUSBANDO_APIS = [
-  { url: "https://nekos.best/api/v2/husbando", format: "nekos.best" },
-  { url: "https://api.waifu.im/search/?included_tags=husbando&is_nsfw=false", format: "waifu.im" },
-  { url: "https://api.waifu.im/search/?included_tags=male&is_nsfw=false", format: "waifu.im" }
-];
+// Use waifu.it API for high quality husbando images
+const HUSBANDO_API_URL = "https://waifu.it/api/v4/husbando";
 
 // ==================== HELPER FUNCTIONS ====================
 
 async function fetchHusbandoImage() {
-  for (const api of HUSBANDO_APIS) {
-    try {
-      const res = await fetch(api.url);
-      const data = await res.json();
-      
-      if (api.format === "url") {
-        return data.url;
-      } else if (api.format === "waifu.im") {
-        return data.images?.[0]?.url;
-      } else if (api.format === "nekos.best") {
-        return data.results?.[0]?.url;
-      }
-    } catch (err) {
-      continue;
+  try {
+    const res = await fetch(HUSBANDO_API_URL);
+    if (!res.ok) {
+      throw new Error(`HTTP ${res.status}`);
     }
+    const data = await res.json();
+    
+    if (!data || !data.url) {
+      throw new Error("Invalid API response");
+    }
+    
+    return data.url;
+  } catch (err) {
+    throw new Error("Failed to fetch husbando image");
   }
-  throw new Error("All APIs failed");
 }
 
 function checkCooldown(guildId, userId, config) {
@@ -82,8 +76,8 @@ module.exports = {
     if (cooldownCheck.onCooldown) {
       const errorMsg = await message.channel.send(
         cooldownCheck.type === "global" 
-          ? `⏰ Server cooldown active. Try again in ${cooldownCheck.remaining}s`
-          : `⏰ You're on cooldown. Try again in ${cooldownCheck.remaining}s`
+          ? `Server cooldown active. Try again in ${cooldownCheck.remaining}s`
+          : `You're on cooldown. Try again in ${cooldownCheck.remaining}s`
       );
       try {
         await message.delete();
@@ -105,12 +99,12 @@ module.exports = {
     try {
       imageUrl = await fetchHusbandoImage();
     } catch (err) {
-      return message.channel.send("❌ Failed to fetch husbando image. Try again later.");
+      return message.channel.send("Failed to fetch husbando image. Try again later.");
     }
 
     // Create embed
     const embed = new EmbedBuilder()
-      .setTitle("✨ A Wild Husbando Appeared!")
+      .setTitle("A Wild Husbando Appeared!")
       .setDescription("**Status:** Unclaimed\n\nWill you claim him?")
       .setImage(imageUrl)
       .setColor(0x4169e1)
@@ -146,7 +140,7 @@ module.exports = {
       // Handle Smash
       if (interaction.customId === "husbando_smash") {
         if (isClaimed) {
-          return interaction.reply({ content: "❌ This husbando has already been claimed!", ephemeral: true });
+          return interaction.reply({ content: "This husbando has already been claimed!", ephemeral: true });
         }
 
         // Claim the husbando
@@ -156,7 +150,7 @@ module.exports = {
 
         // Update embed
         const claimedEmbed = new EmbedBuilder()
-          .setTitle("✨ Husbando Claimed!")
+          .setTitle("Husbando Claimed!")
           .setDescription(`**Claimed by:** ${claimedBy}\n**Time:** ${claimedAt.toLocaleTimeString()}`)
           .setImage(imageUrl)
           .setColor(0x00ff00)
@@ -178,12 +172,12 @@ module.exports = {
           );
 
         await cardMessage.edit({ embeds: [claimedEmbed], components: [disabledRow] });
-        await interaction.reply({ content: "✅ You claimed this husbando!", ephemeral: true });
+        await interaction.reply({ content: "You claimed this husbando!", ephemeral: true });
 
         // Send DM
         try {
           const dmEmbed = new EmbedBuilder()
-            .setTitle("💙 Your Claimed Husbando")
+            .setTitle("Your Claimed Husbando")
             .setDescription(`**Server:** ${message.guild.name}\n**Claimed at:** ${claimedAt.toLocaleString()}`)
             .setImage(imageUrl)
             .setColor(0x4169e1)
@@ -191,7 +185,7 @@ module.exports = {
 
           await claimedBy.send({ embeds: [dmEmbed] });
         } catch (err) {
-          await interaction.followUp({ content: "⚠️ Couldn't send DM. Please enable DMs from server members.", ephemeral: true });
+          await interaction.followUp({ content: "Couldn't send DM. Please enable DMs from server members.", ephemeral: true });
         }
 
         // Delete after display time
@@ -209,10 +203,10 @@ module.exports = {
       // Handle Pass
       if (interaction.customId === "husbando_pass") {
         if (isClaimed) {
-          return interaction.reply({ content: "❌ This husbando has already been claimed!", ephemeral: true });
+          return interaction.reply({ content: "This husbando has already been claimed!", ephemeral: true });
         }
 
-        await interaction.reply({ content: "👋 You passed on this husbando.", ephemeral: true });
+        await interaction.reply({ content: "You passed on this husbando.", ephemeral: true });
         
         try {
           await cardMessage.delete();

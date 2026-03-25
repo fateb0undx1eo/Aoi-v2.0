@@ -1,10 +1,13 @@
-﻿const { EmbedBuilder } = require("discord.js");
+const { EmbedBuilder } = require("discord.js");
+const { getRoleplayGIF } = require("../utils/roleplayAPI");
+const { getRoleplayPrefix } = require("../utils/prefixHelper");
+const logger = require("../utils/winstonLogger");
 
 const getRandomColor = () => Math.floor(Math.random() * 0xFFFFFF);
 
 module.exports = {
   name: "blush",
-  description: "Show embarrassment",
+  description: "Blush",
   usage: "blush",
   category: "roleplay",
   prefixOnly: true,
@@ -16,19 +19,21 @@ module.exports = {
       await message.delete();
     } catch (err) {}
 
+
     try {
-      const res = await fetch("https://nekos.best/api/v2/blush");
-      const data = await res.json();
+      const gifUrl = await getRoleplayGIF('blush');
 
       const embed = new EmbedBuilder()
-        .setDescription(`${message.author} is blushing`)
-        .setImage(data.results[0].url)
+        .setDescription(`${message.author} blushs`)
+        .setImage(gifUrl)
         .setColor(getRandomColor());
 
       await message.channel.send({ embeds: [embed] });
+      
+      logger.command('blush', message.author.id, message.guild.id, true);
     } catch (err) {
-      console.error("Blush Error:", err);
-      await message.channel.send("❌ Failed to fetch blush image.");
+      logger.error("Blush command error:", err);
+      await message.channel.send("Failed to fetch blush image.");
     }
   },
 };

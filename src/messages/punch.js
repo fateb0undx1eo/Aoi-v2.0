@@ -1,5 +1,7 @@
-﻿const { EmbedBuilder } = require("discord.js");
-const Prefix = require("../schemas/prefixSchema");
+const { EmbedBuilder } = require("discord.js");
+const { getRoleplayGIF } = require("../utils/roleplayAPI");
+const { getRoleplayPrefix } = require("../utils/prefixHelper");
+const logger = require("../utils/winstonLogger");
 
 const getRandomColor = () => Math.floor(Math.random() * 0xFFFFFF);
 
@@ -17,36 +19,41 @@ module.exports = {
       await message.delete();
     } catch (err) {}
 
-    const prefix = await Prefix.findOne({ guildId: message.guild.id });
-    const guildPrefix = prefix ? prefix.prefix : "!";
-
     const target = message.mentions.users.first();
+    const roleplayPrefix = await getRoleplayPrefix(message.guild?.id);
     
     if (!target) {
-      return message.reply(`❌ Please mention someone to punch! Usage: \`${guildPrefix}punch @user\``);
+      const errorMsg = await message.channel.send(`Please mention someone to punch! Usage: \`${roleplayPrefix}punch @user\``);
+      setTimeout(() => errorMsg.delete().catch(() => {}), 5000);
+      return;
     }
 
     if (target.id === message.author.id) {
-      return message.reply("❌ You can't punch yourself!");
+      const errorMsg = await message.channel.send("You can't punch yourself!");
+      setTimeout(() => errorMsg.delete().catch(() => {}), 5000);
+      return;
     }
 
     if (target.bot) {
-      return message.reply("❌ You can't punch bots!");
+      const errorMsg = await message.channel.send("You can't punch bots!");
+      setTimeout(() => errorMsg.delete().catch(() => {}), 5000);
+      return;
     }
 
     try {
-      const res = await fetch("https://nekos.best/api/v2/punch");
-      const data = await res.json();
+      const gifUrl = await getRoleplayGIF('punch');
 
       const embed = new EmbedBuilder()
-        .setDescription(`${message.author} punches ${target}`)
-        .setImage(data.results[0].url)
+        .setDescription(`${message.author} punchs ${target}`)
+        .setImage(gifUrl)
         .setColor(getRandomColor());
 
       await message.channel.send({ embeds: [embed] });
+      
+      logger.command('punch', message.author.id, message.guild.id, true);
     } catch (err) {
-      console.error("Punch Error:", err);
-      await message.channel.send("❌ Failed to fetch punch image.");
+      logger.error("Punch command error:", err);
+      await message.channel.send("Failed to fetch punch image.");
     }
   },
 };

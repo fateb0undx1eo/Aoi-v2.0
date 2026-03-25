@@ -1,10 +1,13 @@
-﻿const { EmbedBuilder } = require("discord.js");
+const { EmbedBuilder } = require("discord.js");
+const { getRoleplayGIF } = require("../utils/roleplayAPI");
+const { getRoleplayPrefix } = require("../utils/prefixHelper");
+const logger = require("../utils/winstonLogger");
 
 const getRandomColor = () => Math.floor(Math.random() * 0xFFFFFF);
 
 module.exports = {
   name: "angry",
-  description: "Express anger",
+  description: "Be angry",
   usage: "angry",
   category: "roleplay",
   prefixOnly: true,
@@ -16,19 +19,21 @@ module.exports = {
       await message.delete();
     } catch (err) {}
 
+
     try {
-      const res = await fetch("https://nekos.best/api/v2/angry");
-      const data = await res.json();
+      const gifUrl = await getRoleplayGIF('angry');
 
       const embed = new EmbedBuilder()
-        .setDescription(`${message.author} is angry`)
-        .setImage(data.results[0].url)
+        .setDescription(`${message.author} angrys`)
+        .setImage(gifUrl)
         .setColor(getRandomColor());
 
       await message.channel.send({ embeds: [embed] });
+      
+      logger.command('angry', message.author.id, message.guild.id, true);
     } catch (err) {
-      console.error("Angry Error:", err);
-      await message.channel.send("❌ Failed to fetch angry image.");
+      logger.error("Angry command error:", err);
+      await message.channel.send("Failed to fetch angry image.");
     }
   },
 };

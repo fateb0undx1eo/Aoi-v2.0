@@ -102,26 +102,41 @@ async function trackPrefixCommandStats(message, command, client) {
 module.exports = {
     name: 'messageCreate',
     async execute(message, client) {
-        // Get prefix from database
-        let prefix = config.prefix.value; // Default fallback
+        if (message.author.bot) return;
+        
+        const content = message.content;
+        
+        // Fetch both prefixes from database
+        let regularPrefix = config.prefix.value; // Default fallback
+        let roleplayPrefix = 'r!'; // Default fallback
         
         try {
             const PrefixSchema = require('../../schemas/prefixSchema');
             const guildId = message.guild?.id || 'global';
             const prefixDoc = await PrefixSchema.findOne({ guildId });
             if (prefixDoc) {
-                prefix = prefixDoc.prefix;
+                regularPrefix = prefixDoc.prefix;
+                roleplayPrefix = prefixDoc.roleplayPrefix || 'r!';
             }
         } catch (error) {
             // If database fails, use config.json as fallback
             console.error('Failed to fetch prefix from database:', error);
         }
         
-        const content = message.content;
-
+        // Determine which prefix is being used
+        let prefix = null;
+        
+        if (content.startsWith(roleplayPrefix)) {
+            prefix = roleplayPrefix;
+        } else if (content.startsWith(regularPrefix)) {
+            prefix = regularPrefix;
+        } else {
+            // Message doesn't start with any prefix
+            return;
+        }
+        
         // Early returns
         if (prefix === '') return;
-        if (!content.startsWith(prefix) || message.author.bot) return;
 
         // ✅ FIX: Ensure prefix collection exists before trying to access it
         if (!client.prefix) {

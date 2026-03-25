@@ -1,10 +1,13 @@
-﻿const { EmbedBuilder } = require("discord.js");
+const { EmbedBuilder } = require("discord.js");
+const { getRoleplayGIF } = require("../utils/roleplayAPI");
+const { getRoleplayPrefix } = require("../utils/prefixHelper");
+const logger = require("../utils/winstonLogger");
 
 const getRandomColor = () => Math.floor(Math.random() * 0xFFFFFF);
 
 module.exports = {
   name: "pout",
-  description: "Make a pouty face!",
+  description: "Pout",
   usage: "pout",
   category: "roleplay",
   prefixOnly: true,
@@ -16,19 +19,21 @@ module.exports = {
       await message.delete();
     } catch (err) {}
 
+
     try {
-      const res = await fetch("https://nekos.best/api/v2/pout");
-      const data = await res.json();
+      const gifUrl = await getRoleplayGIF('pout');
 
       const embed = new EmbedBuilder()
-        .setDescription(`${message.author} is pouting`)
-        .setImage(data.results[0].url)
+        .setDescription(`${message.author} pouts`)
+        .setImage(gifUrl)
         .setColor(getRandomColor());
 
       await message.channel.send({ embeds: [embed] });
+      
+      logger.command('pout', message.author.id, message.guild.id, true);
     } catch (err) {
-      console.error("Pout Error:", err);
-      await message.channel.send("❌ Failed to fetch pout image.");
+      logger.error("Pout command error:", err);
+      await message.channel.send("Failed to fetch pout image.");
     }
   },
 };

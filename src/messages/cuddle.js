@@ -1,11 +1,13 @@
-﻿const { EmbedBuilder } = require("discord.js");
-const Prefix = require("../schemas/prefixSchema");
+const { EmbedBuilder } = require("discord.js");
+const { getRoleplayGIF } = require("../utils/roleplayAPI");
+const { getRoleplayPrefix } = require("../utils/prefixHelper");
+const logger = require("../utils/winstonLogger");
 
 const getRandomColor = () => Math.floor(Math.random() * 0xFFFFFF);
 
 module.exports = {
   name: "cuddle",
-  description: "Cuddle someone!",
+  description: "Cuddle with someone!",
   usage: "cuddle <@user>",
   category: "roleplay",
   prefixOnly: true,
@@ -17,36 +19,41 @@ module.exports = {
       await message.delete();
     } catch (err) {}
 
-    const prefix = await Prefix.findOne({ guildId: message.guild.id });
-    const guildPrefix = prefix ? prefix.prefix : "!";
-
     const target = message.mentions.users.first();
+    const roleplayPrefix = await getRoleplayPrefix(message.guild?.id);
     
     if (!target) {
-      return message.reply(`❌ Please mention someone to cuddle! Usage: \`${guildPrefix}cuddle @user\``);
+      const errorMsg = await message.channel.send(`Please mention someone to cuddle! Usage: \`${roleplayPrefix}cuddle @user\``);
+      setTimeout(() => errorMsg.delete().catch(() => {}), 5000);
+      return;
     }
 
     if (target.id === message.author.id) {
-      return message.reply("❌ You can't cuddle yourself!");
+      const errorMsg = await message.channel.send("You can't cuddle yourself!");
+      setTimeout(() => errorMsg.delete().catch(() => {}), 5000);
+      return;
     }
 
     if (target.bot) {
-      return message.reply("❌ You can't cuddle bots!");
+      const errorMsg = await message.channel.send("You can't cuddle bots!");
+      setTimeout(() => errorMsg.delete().catch(() => {}), 5000);
+      return;
     }
 
     try {
-      const res = await fetch("https://nekos.best/api/v2/cuddle");
-      const data = await res.json();
+      const gifUrl = await getRoleplayGIF('cuddle');
 
       const embed = new EmbedBuilder()
         .setDescription(`${message.author} cuddles ${target}`)
-        .setImage(data.results[0].url)
+        .setImage(gifUrl)
         .setColor(getRandomColor());
 
       await message.channel.send({ embeds: [embed] });
+      
+      logger.command('cuddle', message.author.id, message.guild.id, true);
     } catch (err) {
-      console.error("Cuddle Error:", err);
-      await message.channel.send("❌ Failed to fetch cuddle image.");
+      logger.error("Cuddle command error:", err);
+      await message.channel.send("Failed to fetch cuddle image.");
     }
   },
 };

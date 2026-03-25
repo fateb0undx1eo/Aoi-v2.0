@@ -87,7 +87,27 @@ module.exports = {
             }
         }
 
-        // Load presence configuration from discobase.json
+        // Migrate presence configuration from discobase.json to database (if needed)
+        try {
+            const { migratePresenceConfig } = require('../../utils/migratePresenceConfig');
+            await migratePresenceConfig(client);
+        } catch (error) {
+            logger('Failed to migrate presence config', 'ERROR');
+            logErrorToFile(error);
+        }
+
+        // Restore presence rotation from database (if bot config service exists)
+        try {
+            if (client.botConfigService) {
+                await client.botConfigService.restorePresenceRotation();
+                logger('Presence rotation restored from database', 'SUCCESS');
+            }
+        } catch (error) {
+            logger('Failed to restore presence rotation', 'ERROR');
+            logErrorToFile(error);
+        }
+
+        // Load presence configuration from discobase.json (fallback for backward compatibility)
         try {
             const discobasePath = path.join(__dirname, '../../../discobase.json');
             if (fs.existsSync(discobasePath)) {

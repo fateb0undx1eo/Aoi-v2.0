@@ -1,5 +1,7 @@
-﻿const { EmbedBuilder } = require("discord.js");
-const Prefix = require("../schemas/prefixSchema");
+const { EmbedBuilder } = require("discord.js");
+const { getRoleplayGIF } = require("../utils/roleplayAPI");
+const { getRoleplayPrefix } = require("../utils/prefixHelper");
+const logger = require("../utils/winstonLogger");
 
 const getRandomColor = () => Math.floor(Math.random() * 0xFFFFFF);
 
@@ -17,36 +19,41 @@ module.exports = {
       await message.delete();
     } catch (err) {}
 
-    const prefix = await Prefix.findOne({ guildId: message.guild.id });
-    const guildPrefix = prefix ? prefix.prefix : "!";
-
     const target = message.mentions.users.first();
+    const roleplayPrefix = await getRoleplayPrefix(message.guild?.id);
     
     if (!target) {
-      return message.reply(`❌ Please mention someone to poke! Usage: \`${guildPrefix}poke @user\``);
+      const errorMsg = await message.channel.send(`Please mention someone to poke! Usage: \`${roleplayPrefix}poke @user\``);
+      setTimeout(() => errorMsg.delete().catch(() => {}), 5000);
+      return;
     }
 
     if (target.id === message.author.id) {
-      return message.reply("❌ You can't poke yourself!");
+      const errorMsg = await message.channel.send("You can't poke yourself!");
+      setTimeout(() => errorMsg.delete().catch(() => {}), 5000);
+      return;
     }
 
     if (target.bot) {
-      return message.reply("❌ You can't poke bots!");
+      const errorMsg = await message.channel.send("You can't poke bots!");
+      setTimeout(() => errorMsg.delete().catch(() => {}), 5000);
+      return;
     }
 
     try {
-      const res = await fetch("https://nekos.best/api/v2/poke");
-      const data = await res.json();
+      const gifUrl = await getRoleplayGIF('poke');
 
       const embed = new EmbedBuilder()
         .setDescription(`${message.author} pokes ${target}`)
-        .setImage(data.results[0].url)
+        .setImage(gifUrl)
         .setColor(getRandomColor());
 
       await message.channel.send({ embeds: [embed] });
+      
+      logger.command('poke', message.author.id, message.guild.id, true);
     } catch (err) {
-      console.error("Poke Error:", err);
-      await message.channel.send("❌ Failed to fetch poke image.");
+      logger.error("Poke command error:", err);
+      await message.channel.send("Failed to fetch poke image.");
     }
   },
 };

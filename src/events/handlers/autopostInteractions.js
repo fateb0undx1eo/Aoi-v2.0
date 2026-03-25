@@ -86,7 +86,122 @@ async function handleAutopostInteractions(interaction) {
                 .setTimestamp()
                 .setFooter({ text: 'Auto-Post Statistics' });
 
-            await interaction.reply({ embeds: [embed], ephemeral: true });
+            const buttonRow = new ActionRowBuilder()
+                .addComponents(
+                    new ButtonBuilder()
+                        .setCustomId('autopost_refresh_stats')
+                        .setLabel('Refresh')
+                        .setStyle(ButtonStyle.Secondary),
+                    new ButtonBuilder()
+                        .setCustomId('autopost_back_main')
+                        .setLabel('Back to Menu')
+                        .setStyle(ButtonStyle.Primary)
+                );
+
+            await interaction.reply({ embeds: [embed], components: [buttonRow], ephemeral: true });
+            return true;
+        }
+
+        // Refresh statistics
+        if (action === 'refresh' && interaction.customId === 'autopost_refresh_stats') {
+            const state = getAutoPosterState();
+            
+            if (!state.running) {
+                await interaction.update({ 
+                    content: 'Auto-posting is not currently active. No statistics available.',
+                    embeds: [],
+                    components: []
+                });
+                return true;
+            }
+
+            const channel = interaction.client.channels.cache.get(state.channelId);
+            const nextPostTime = Math.floor((Date.now() + state.intervalSeconds * 1000) / 1000);
+            const uptime = state.startTime ? Math.floor((Date.now() - state.startTime) / 1000) : 0;
+            const hours = Math.floor(uptime / 3600);
+            const minutes = Math.floor((uptime % 3600) / 60);
+
+            const embed = new EmbedBuilder()
+                .setColor('#2ecc71')
+                .setTitle('Auto-Post Statistics')
+                .setDescription('Detailed information about the current auto-posting session')
+                .addFields(
+                    { name: 'Configuration', value: '\u200b', inline: false },
+                    { name: 'Target Channel', value: channel ? `${channel}` : 'Unknown', inline: true },
+                    { name: 'Post Interval', value: `${state.intervalSeconds} seconds`, inline: true },
+                    { name: 'Ping Role', value: state.pingRoleId ? `<@&${state.pingRoleId}>` : 'None', inline: true },
+                    { name: '\u200b', value: '\u200b', inline: false },
+                    { name: 'Activity', value: '\u200b', inline: false },
+                    { name: 'Total Posts', value: `${state.totalPosts || 0}`, inline: true },
+                    { name: 'Session Uptime', value: `${hours}h ${minutes}m`, inline: true },
+                    { name: 'Next Post', value: `<t:${nextPostTime}:R>`, inline: true },
+                    { name: '\u200b', value: '\u200b', inline: false },
+                    { name: 'Content Sources', value: '\u200b', inline: false },
+                    { name: 'Total Subreddits', value: `${subreddits.length}`, inline: true },
+                    { name: 'Auto-React', value: state.autoReact && state.autoReact.length > 0 ? state.autoReact.join(' ') : 'Disabled', inline: true }
+                )
+                .addFields({
+                    name: 'Top Subreddits',
+                    value: subreddits.slice(0, 15).map((s, i) => `${i + 1}. r/${s}`).join('\n'),
+                    inline: false
+                })
+                .setTimestamp()
+                .setFooter({ text: 'Auto-Post Statistics' });
+
+            const buttonRow = new ActionRowBuilder()
+                .addComponents(
+                    new ButtonBuilder()
+                        .setCustomId('autopost_refresh_stats')
+                        .setLabel('Refresh')
+                        .setStyle(ButtonStyle.Secondary),
+                    new ButtonBuilder()
+                        .setCustomId('autopost_back_main')
+                        .setLabel('Back to Menu')
+                        .setStyle(ButtonStyle.Primary)
+                );
+
+            await interaction.update({ embeds: [embed], components: [buttonRow] });
+            return true;
+        }
+
+        // Back to main menu from statistics
+        if (action === 'back' && interaction.customId === 'autopost_back_main') {
+            const state = getAutoPosterState();
+            
+            const embed = new EmbedBuilder()
+                .setColor(state.running ? '#2ecc71' : '#95a5a6')
+                .setTitle('Auto-Post Manager')
+                .setDescription(state.running 
+                    ? 'Status: Active'
+                    : 'Status: Inactive'
+                );
+
+            if (state.running) {
+                const channel = interaction.client.channels.cache.get(state.channelId);
+                embed.addFields(
+                    { name: 'Channel', value: channel ? `${channel}` : 'Unknown', inline: true },
+                    { name: 'Interval', value: `${state.intervalSeconds}s`, inline: true }
+                );
+            }
+
+            const row = new ActionRowBuilder()
+                .addComponents(
+                    new ButtonBuilder()
+                        .setCustomId('autopost_configure')
+                        .setLabel(state.running ? 'Configure' : 'Setup')
+                        .setStyle(ButtonStyle.Primary),
+                    new ButtonBuilder()
+                        .setCustomId('autopost_stats')
+                        .setLabel('Statistics')
+                        .setStyle(ButtonStyle.Secondary),
+                    new ButtonBuilder()
+                        .setCustomId('autopost_stop')
+                        .setLabel('Stop')
+                        .setStyle(ButtonStyle.Danger)
+                        .setDisabled(!state.running)
+                );
+
+            await interaction.update({ embeds: [embed], components: [row] });
             return true;
         }
 
@@ -149,6 +264,76 @@ async function handleAutopostInteractions(interaction) {
             return true;
         }
 
+        // Back to channel selection
+        if (action === 'back' && interaction.customId === 'autopost_back_channel') {
+            const channelRow = new ActionRowBuilder()
+                .addComponents(
+                    new ChannelSelectMenuBuilder()
+                        .setCustomId('autopost_channel_select')
+                        .setPlaceholder('Select channel for meme posts')
+                        .addChannelTypes(ChannelType.GuildText)
+                );
+
+            const embed = new EmbedBuilder()
+                .setColor('#3498db')
+                .setTitle('Configuration - Step 1 of 4')
+                .setDescription('Select the channel where memes will be posted')
+                .setFooter({ text: 'Auto-Post Configuration' });
+
+            await interaction.update({
+                embeds: [embed],
+                components: [channelRow]
+            });
+            return true;
+        }
+
+        // Back to role selection
+        if (action === 'back' && interaction.customId === 'autopost_back_role') {
+            const setupData = interaction.client.autopostSetup?.get(interaction.user.id);
+            
+            if (!setupData) {
+                await interaction.reply({ 
+                    content: 'Configuration data not found. Please start over with /autopost', 
+                    ephemeral: true 
+                });
+                return true;
+            }
+
+            const embed = new EmbedBuilder()
+                .setColor('#3498db')
+                .setTitle('Configuration - Step 2 of 4')
+                .setDescription('Select a role to ping with each meme post (optional)')
+                .addFields(
+                    { name: 'Selected Channel', value: `<#${setupData.channelId}>`, inline: false }
+                )
+                .setFooter({ text: 'Auto-Post Configuration' });
+
+            const roleRow = new ActionRowBuilder()
+                .addComponents(
+                    new RoleSelectMenuBuilder()
+                        .setCustomId('autopost_role_select')
+                        .setPlaceholder('Select role to ping (optional)')
+                );
+
+            const buttonRow = new ActionRowBuilder()
+                .addComponents(
+                    new ButtonBuilder()
+                        .setCustomId('autopost_back_channel')
+                        .setLabel('Back')
+                        .setStyle(ButtonStyle.Secondary),
+                    new ButtonBuilder()
+                        .setCustomId('autopost_skip')
+                        .setLabel('Skip')
+                        .setStyle(ButtonStyle.Secondary)
+                );
+
+            await interaction.update({
+                embeds: [embed],
+                components: [roleRow, buttonRow]
+            });
+            return true;
+        }
+
         // Skip role button
         if (action === 'skip') {
             const setupData = interaction.client.autopostSetup?.get(interaction.user.id);
@@ -176,6 +361,10 @@ async function handleAutopostInteractions(interaction) {
 
             const buttonRow = new ActionRowBuilder()
                 .addComponents(
+                    new ButtonBuilder()
+                        .setCustomId('autopost_back_role')
+                        .setLabel('Back')
+                        .setStyle(ButtonStyle.Secondary),
                     new ButtonBuilder()
                         .setCustomId('autopost_continue')
                         .setLabel('Continue')
@@ -223,6 +412,10 @@ async function handleAutopostInteractions(interaction) {
         const buttonRow = new ActionRowBuilder()
             .addComponents(
                 new ButtonBuilder()
+                    .setCustomId('autopost_back_channel')
+                    .setLabel('Back')
+                    .setStyle(ButtonStyle.Secondary),
+                new ButtonBuilder()
                     .setCustomId('autopost_skip')
                     .setLabel('Skip')
                     .setStyle(ButtonStyle.Secondary)
@@ -261,6 +454,10 @@ async function handleAutopostInteractions(interaction) {
 
         const buttonRow = new ActionRowBuilder()
             .addComponents(
+                new ButtonBuilder()
+                    .setCustomId('autopost_back_role')
+                    .setLabel('Back')
+                    .setStyle(ButtonStyle.Secondary),
                 new ButtonBuilder()
                     .setCustomId('autopost_continue')
                     .setLabel('Continue')

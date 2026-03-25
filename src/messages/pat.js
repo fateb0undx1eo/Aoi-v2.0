@@ -1,5 +1,7 @@
-﻿const { EmbedBuilder } = require("discord.js");
-const Prefix = require("../schemas/prefixSchema");
+const { EmbedBuilder } = require("discord.js");
+const { getRoleplayGIF } = require("../utils/roleplayAPI");
+const { getRoleplayPrefix } = require("../utils/prefixHelper");
+const logger = require("../utils/winstonLogger");
 
 const getRandomColor = () => Math.floor(Math.random() * 0xFFFFFF);
 
@@ -17,36 +19,41 @@ module.exports = {
       await message.delete();
     } catch (err) {}
 
-    const prefix = await Prefix.findOne({ guildId: message.guild.id });
-    const guildPrefix = prefix ? prefix.prefix : "!";
-
     const target = message.mentions.users.first();
+    const roleplayPrefix = await getRoleplayPrefix(message.guild?.id);
     
     if (!target) {
-      return message.reply(`❌ Please mention someone to pat! Usage: \`${guildPrefix}pat @user\``);
+      const errorMsg = await message.channel.send(`Please mention someone to pat! Usage: \`${roleplayPrefix}pat @user\``);
+      setTimeout(() => errorMsg.delete().catch(() => {}), 5000);
+      return;
     }
 
     if (target.id === message.author.id) {
-      return message.reply("❌ You can't pat yourself!");
+      const errorMsg = await message.channel.send("You can't pat yourself!");
+      setTimeout(() => errorMsg.delete().catch(() => {}), 5000);
+      return;
     }
 
     if (target.bot) {
-      return message.reply("❌ You can't pat bots!");
+      const errorMsg = await message.channel.send("You can't pat bots!");
+      setTimeout(() => errorMsg.delete().catch(() => {}), 5000);
+      return;
     }
 
     try {
-      const res = await fetch("https://nekos.best/api/v2/pat");
-      const data = await res.json();
+      const gifUrl = await getRoleplayGIF('pat');
 
       const embed = new EmbedBuilder()
         .setDescription(`${message.author} pats ${target}`)
-        .setImage(data.results[0].url)
+        .setImage(gifUrl)
         .setColor(getRandomColor());
 
       await message.channel.send({ embeds: [embed] });
+      
+      logger.command('pat', message.author.id, message.guild.id, true);
     } catch (err) {
-      console.error("Pat Error:", err);
-      await message.channel.send("❌ Failed to fetch pat image.");
+      logger.error("Pat command error:", err);
+      await message.channel.send("Failed to fetch pat image.");
     }
   },
 };

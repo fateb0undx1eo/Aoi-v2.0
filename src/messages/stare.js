@@ -1,10 +1,13 @@
-﻿const { EmbedBuilder } = require("discord.js");
+const { EmbedBuilder } = require("discord.js");
+const { getRoleplayGIF } = require("../utils/roleplayAPI");
+const { getRoleplayPrefix } = require("../utils/prefixHelper");
+const logger = require("../utils/winstonLogger");
 
 const getRandomColor = () => Math.floor(Math.random() * 0xFFFFFF);
 
 module.exports = {
   name: "stare",
-  description: "Stare intensely",
+  description: "Stare",
   usage: "stare",
   category: "roleplay",
   prefixOnly: true,
@@ -16,19 +19,21 @@ module.exports = {
       await message.delete();
     } catch (err) {}
 
+
     try {
-      const res = await fetch("https://nekos.best/api/v2/stare");
-      const data = await res.json();
+      const gifUrl = await getRoleplayGIF('stare');
 
       const embed = new EmbedBuilder()
-        .setDescription(`${message.author} is staring`)
-        .setImage(data.results[0].url)
+        .setDescription(`${message.author} stares`)
+        .setImage(gifUrl)
         .setColor(getRandomColor());
 
       await message.channel.send({ embeds: [embed] });
+      
+      logger.command('stare', message.author.id, message.guild.id, true);
     } catch (err) {
-      console.error("Stare Error:", err);
-      await message.channel.send("❌ Failed to fetch stare image.");
+      logger.error("Stare command error:", err);
+      await message.channel.send("Failed to fetch stare image.");
     }
   },
 };

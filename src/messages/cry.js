@@ -1,10 +1,13 @@
-﻿const { EmbedBuilder } = require("discord.js");
+const { EmbedBuilder } = require("discord.js");
+const { getRoleplayGIF } = require("../utils/roleplayAPI");
+const { getRoleplayPrefix } = require("../utils/prefixHelper");
+const logger = require("../utils/winstonLogger");
 
 const getRandomColor = () => Math.floor(Math.random() * 0xFFFFFF);
 
 module.exports = {
   name: "cry",
-  description: "Express sadness",
+  description: "Cry",
   usage: "cry",
   category: "roleplay",
   prefixOnly: true,
@@ -16,19 +19,21 @@ module.exports = {
       await message.delete();
     } catch (err) {}
 
+
     try {
-      const res = await fetch("https://nekos.best/api/v2/cry");
-      const data = await res.json();
+      const gifUrl = await getRoleplayGIF('cry');
 
       const embed = new EmbedBuilder()
-        .setDescription(`${message.author} is crying`)
-        .setImage(data.results[0].url)
+        .setDescription(`${message.author} crys`)
+        .setImage(gifUrl)
         .setColor(getRandomColor());
 
       await message.channel.send({ embeds: [embed] });
+      
+      logger.command('cry', message.author.id, message.guild.id, true);
     } catch (err) {
-      console.error("Cry Error:", err);
-      await message.channel.send("❌ Failed to fetch cry image.");
+      logger.error("Cry command error:", err);
+      await message.channel.send("Failed to fetch cry image.");
     }
   },
 };

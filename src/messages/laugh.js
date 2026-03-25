@@ -1,10 +1,13 @@
-﻿const { EmbedBuilder } = require("discord.js");
+const { EmbedBuilder } = require("discord.js");
+const { getRoleplayGIF } = require("../utils/roleplayAPI");
+const { getRoleplayPrefix } = require("../utils/prefixHelper");
+const logger = require("../utils/winstonLogger");
 
 const getRandomColor = () => Math.floor(Math.random() * 0xFFFFFF);
 
 module.exports = {
   name: "laugh",
-  description: "Laugh out loud",
+  description: "Laugh",
   usage: "laugh",
   category: "roleplay",
   prefixOnly: true,
@@ -16,19 +19,21 @@ module.exports = {
       await message.delete();
     } catch (err) {}
 
+
     try {
-      const res = await fetch("https://nekos.best/api/v2/laugh");
-      const data = await res.json();
+      const gifUrl = await getRoleplayGIF('laugh');
 
       const embed = new EmbedBuilder()
-        .setDescription(`${message.author} is laughing`)
-        .setImage(data.results[0].url)
+        .setDescription(`${message.author} laughs`)
+        .setImage(gifUrl)
         .setColor(getRandomColor());
 
       await message.channel.send({ embeds: [embed] });
+      
+      logger.command('laugh', message.author.id, message.guild.id, true);
     } catch (err) {
-      console.error("Laugh Error:", err);
-      await message.channel.send("❌ Failed to fetch laugh image.");
+      logger.error("Laugh command error:", err);
+      await message.channel.send("Failed to fetch laugh image.");
     }
   },
 };

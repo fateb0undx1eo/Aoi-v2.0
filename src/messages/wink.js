@@ -1,11 +1,14 @@
-﻿const { EmbedBuilder } = require("discord.js");
+const { EmbedBuilder } = require("discord.js");
+const { getRoleplayGIF } = require("../utils/roleplayAPI");
+const { getRoleplayPrefix } = require("../utils/prefixHelper");
+const logger = require("../utils/winstonLogger");
 
 const getRandomColor = () => Math.floor(Math.random() * 0xFFFFFF);
 
 module.exports = {
   name: "wink",
-  description: "Wink at someone or just wink!",
-  usage: "wink [@user]",
+  description: "Wink",
+  usage: "wink",
   category: "roleplay",
   prefixOnly: true,
   requiresTarget: false,
@@ -16,25 +19,21 @@ module.exports = {
       await message.delete();
     } catch (err) {}
 
-    const target = message.mentions.users.first();
-    
-    try {
-      const res = await fetch("https://nekos.best/api/v2/wink");
-      const data = await res.json();
 
-      const description = target 
-        ? `${message.author} winks at ${target}`
-        : `${message.author} winks`;
+    try {
+      const gifUrl = await getRoleplayGIF('wink');
 
       const embed = new EmbedBuilder()
-        .setDescription(description)
-        .setImage(data.results[0].url)
+        .setDescription(`${message.author} winks`)
+        .setImage(gifUrl)
         .setColor(getRandomColor());
 
       await message.channel.send({ embeds: [embed] });
+      
+      logger.command('wink', message.author.id, message.guild.id, true);
     } catch (err) {
-      console.error("Wink Error:", err);
-      await message.channel.send("❌ Failed to fetch wink image.");
+      logger.error("Wink command error:", err);
+      await message.channel.send("Failed to fetch wink image.");
     }
   },
 };

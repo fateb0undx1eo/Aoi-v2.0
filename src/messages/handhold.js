@@ -1,11 +1,13 @@
-﻿const { EmbedBuilder } = require("discord.js");
-const Prefix = require("../schemas/prefixSchema");
+const { EmbedBuilder } = require("discord.js");
+const { getRoleplayGIF } = require("../utils/roleplayAPI");
+const { getRoleplayPrefix } = require("../utils/prefixHelper");
+const logger = require("../utils/winstonLogger");
 
 const getRandomColor = () => Math.floor(Math.random() * 0xFFFFFF);
 
 module.exports = {
   name: "handhold",
-  description: "Hold someone's hand!",
+  description: "Hold hands with someone!",
   usage: "handhold <@user>",
   category: "roleplay",
   prefixOnly: true,
@@ -17,36 +19,41 @@ module.exports = {
       await message.delete();
     } catch (err) {}
 
-    const prefix = await Prefix.findOne({ guildId: message.guild.id });
-    const guildPrefix = prefix ? prefix.prefix : "!";
-
     const target = message.mentions.users.first();
+    const roleplayPrefix = await getRoleplayPrefix(message.guild?.id);
     
     if (!target) {
-      return message.reply(`❌ Please mention someone to hold hands with! Usage: \`${guildPrefix}handhold @user\``);
+      const errorMsg = await message.channel.send(`Please mention someone to handhold! Usage: \`${roleplayPrefix}handhold @user\``);
+      setTimeout(() => errorMsg.delete().catch(() => {}), 5000);
+      return;
     }
 
     if (target.id === message.author.id) {
-      return message.reply("❌ You can't hold your own hand!");
+      const errorMsg = await message.channel.send("You can't handhold yourself!");
+      setTimeout(() => errorMsg.delete().catch(() => {}), 5000);
+      return;
     }
 
     if (target.bot) {
-      return message.reply("❌ You can't hold hands with bots!");
+      const errorMsg = await message.channel.send("You can't handhold bots!");
+      setTimeout(() => errorMsg.delete().catch(() => {}), 5000);
+      return;
     }
 
     try {
-      const res = await fetch("https://nekos.best/api/v2/handhold");
-      const data = await res.json();
+      const gifUrl = await getRoleplayGIF('handhold');
 
       const embed = new EmbedBuilder()
-        .setDescription(`${message.author} holds hands with ${target}`)
-        .setImage(data.results[0].url)
+        .setDescription(`${message.author} handholds ${target}`)
+        .setImage(gifUrl)
         .setColor(getRandomColor());
 
       await message.channel.send({ embeds: [embed] });
+      
+      logger.command('handhold', message.author.id, message.guild.id, true);
     } catch (err) {
-      console.error("Handhold Error:", err);
-      await message.channel.send("❌ Failed to fetch handhold image.");
+      logger.error("Handhold command error:", err);
+      await message.channel.send("Failed to fetch handhold image.");
     }
   },
 };

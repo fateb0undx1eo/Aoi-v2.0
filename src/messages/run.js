@@ -1,10 +1,13 @@
-﻿const { EmbedBuilder } = require("discord.js");
+const { EmbedBuilder } = require("discord.js");
+const { getRoleplayGIF } = require("../utils/roleplayAPI");
+const { getRoleplayPrefix } = require("../utils/prefixHelper");
+const logger = require("../utils/winstonLogger");
 
 const getRandomColor = () => Math.floor(Math.random() * 0xFFFFFF);
 
 module.exports = {
   name: "run",
-  description: "Run away!",
+  description: "Run",
   usage: "run",
   category: "roleplay",
   prefixOnly: true,
@@ -16,19 +19,21 @@ module.exports = {
       await message.delete();
     } catch (err) {}
 
+
     try {
-      const res = await fetch("https://nekos.best/api/v2/run");
-      const data = await res.json();
+      const gifUrl = await getRoleplayGIF('run');
 
       const embed = new EmbedBuilder()
-        .setDescription(`${message.author} is running`)
-        .setImage(data.results[0].url)
+        .setDescription(`${message.author} runs`)
+        .setImage(gifUrl)
         .setColor(getRandomColor());
 
       await message.channel.send({ embeds: [embed] });
+      
+      logger.command('run', message.author.id, message.guild.id, true);
     } catch (err) {
-      console.error("Run Error:", err);
-      await message.channel.send("❌ Failed to fetch run image.");
+      logger.error("Run command error:", err);
+      await message.channel.send("Failed to fetch run image.");
     }
   },
 };

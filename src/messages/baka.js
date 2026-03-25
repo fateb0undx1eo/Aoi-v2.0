@@ -1,10 +1,13 @@
-﻿const { EmbedBuilder } = require("discord.js");
+const { EmbedBuilder } = require("discord.js");
+const { getRoleplayGIF } = require("../utils/roleplayAPI");
+const { getRoleplayPrefix } = require("../utils/prefixHelper");
+const logger = require("../utils/winstonLogger");
 
 const getRandomColor = () => Math.floor(Math.random() * 0xFFFFFF);
 
 module.exports = {
   name: "baka",
-  description: "Call someone baka or be baka",
+  description: "Baka",
   usage: "baka",
   category: "roleplay",
   prefixOnly: true,
@@ -16,19 +19,21 @@ module.exports = {
       await message.delete();
     } catch (err) {}
 
+
     try {
-      const res = await fetch("https://nekos.best/api/v2/baka");
-      const data = await res.json();
+      const gifUrl = await getRoleplayGIF('baka');
 
       const embed = new EmbedBuilder()
-        .setDescription(`${message.author} is being baka`)
-        .setImage(data.results[0].url)
+        .setDescription(`${message.author} bakas`)
+        .setImage(gifUrl)
         .setColor(getRandomColor());
 
       await message.channel.send({ embeds: [embed] });
+      
+      logger.command('baka', message.author.id, message.guild.id, true);
     } catch (err) {
-      console.error("Baka Error:", err);
-      await message.channel.send("❌ Failed to fetch baka image.");
+      logger.error("Baka command error:", err);
+      await message.channel.send("Failed to fetch baka image.");
     }
   },
 };

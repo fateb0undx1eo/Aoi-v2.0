@@ -198,6 +198,12 @@ function printAsciiArt() {
         await handleCommands(client, path.join(process.cwd(), 'src/commands'));
         logger(`Slash commands loaded successfully! (${client.commands.size} commands)`, 'SUCCESS');
         
+        // Initialize Bot Configuration Service
+        logger('Initializing bot configuration service...', 'INFO');
+        const BotConfigService = require('./services/botConfigService');
+        client.botConfigService = new BotConfigService(client);
+        logger('Bot configuration service initialized!', 'SUCCESS');
+        
         // Load dashboard routes AFTER bot is ready
         if (fs.existsSync(adminFolderPath) && fs.existsSync(dashboardFilePath)) {
             require(dashboardFilePath);

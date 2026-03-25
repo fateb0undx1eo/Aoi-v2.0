@@ -1,10 +1,13 @@
-﻿const { EmbedBuilder } = require("discord.js");
+const { EmbedBuilder } = require("discord.js");
+const { getRoleplayGIF } = require("../utils/roleplayAPI");
+const { getRoleplayPrefix } = require("../utils/prefixHelper");
+const logger = require("../utils/winstonLogger");
 
 const getRandomColor = () => Math.floor(Math.random() * 0xFFFFFF);
 
 module.exports = {
   name: "bored",
-  description: "Show boredom",
+  description: "Be bored",
   usage: "bored",
   category: "roleplay",
   prefixOnly: true,
@@ -16,19 +19,21 @@ module.exports = {
       await message.delete();
     } catch (err) {}
 
+
     try {
-      const res = await fetch("https://nekos.best/api/v2/bored");
-      const data = await res.json();
+      const gifUrl = await getRoleplayGIF('bored');
 
       const embed = new EmbedBuilder()
-        .setDescription(`${message.author} is bored`)
-        .setImage(data.results[0].url)
+        .setDescription(`${message.author} boreds`)
+        .setImage(gifUrl)
         .setColor(getRandomColor());
 
       await message.channel.send({ embeds: [embed] });
+      
+      logger.command('bored', message.author.id, message.guild.id, true);
     } catch (err) {
-      console.error("Bored Error:", err);
-      await message.channel.send("❌ Failed to fetch bored image.");
+      logger.error("Bored command error:", err);
+      await message.channel.send("Failed to fetch bored image.");
     }
   },
 };
