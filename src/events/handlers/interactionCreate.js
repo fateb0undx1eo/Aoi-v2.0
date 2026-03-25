@@ -422,7 +422,6 @@ if (interaction.isChannelSelectMenu() && interaction.customId === 'autopost_chan
     }).catch(console.error);
     return;
 }
-}
 
 // Handle role select for autopost
 if (interaction.isRoleSelectMenu() && interaction.customId === 'autopost_role_select') {
