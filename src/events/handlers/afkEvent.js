@@ -1,4 +1,5 @@
 const afkSchema = require('../../schemas/afkSchema');
+const { EmbedBuilder } = require('discord.js');
 const ms = require('ms');
 
 module.exports = {
@@ -23,8 +24,13 @@ module.exports = {
                 guildId: message.guild.id
             });
 
+            const welcomeEmbed = new EmbedBuilder()
+                .setColor(0x00ff00)
+                .setDescription(`👋 Welcome back ${message.author}! You were AFK for **${readableTime}**.`)
+                .setTimestamp();
+
             await message.reply({
-                content: `Welcome back <@${message.author.id}>! You were AFK for **${readableTime}**.`,
+                embeds: [welcomeEmbed],
                 allowedMentions: { repliedUser: false }
             }).catch(() => {});
         }
@@ -47,8 +53,18 @@ module.exports = {
                 const duration = Date.now() - afkUser.timestamp;
                 const readableTime = ms(duration, { long: true });
 
+                const afkEmbed = new EmbedBuilder()
+                    .setColor(0xffa500)
+                    .setAuthor({ name: `${user.username} is currently AFK`, iconURL: user.displayAvatarURL() })
+                    .addFields(
+                        { name: '💬 Reason', value: afkUser.reason || "No reason provided", inline: false },
+                        { name: '⏰ Duration', value: readableTime, inline: true },
+                        { name: '📅 Since', value: `<t:${Math.floor(afkUser.timestamp / 1000)}:R>`, inline: true }
+                    )
+                    .setTimestamp();
+
                 await message.reply({
-                    content: `**${user.username}** is currently AFK\n> **Reason:** ${afkUser.reason || "No reason provided"}\n> **Since:** ${readableTime} ago`,
+                    embeds: [afkEmbed],
                     allowedMentions: { repliedUser: false }
                 }).catch(() => {});
 
@@ -57,11 +73,19 @@ module.exports = {
                 // =============================
                 if (afkUser.dmNotify) {
                     try {
-                        await user.send(
-                            `You were mentioned by **${message.author.tag}** in **${message.guild.name}**.\n\n` +
-                            `> **Message:** ${message.content}\n` +
-                            `[Jump to message](${message.url})`
-                        );
+                        const dmEmbed = new EmbedBuilder()
+                            .setColor(0x5865f2)
+                            .setTitle('📬 You were mentioned while AFK!')
+                            .setDescription(`You were mentioned by **${message.author.tag}** in **${message.guild.name}**`)
+                            .addFields(
+                                { name: '💬 Message', value: message.content.length > 1024 ? message.content.substring(0, 1021) + '...' : message.content },
+                                { name: '📍 Channel', value: `<#${message.channel.id}>`, inline: true },
+                                { name: '🔗 Jump to Message', value: `[Click here](${message.url})`, inline: true }
+                            )
+                            .setThumbnail(message.author.displayAvatarURL())
+                            .setTimestamp();
+
+                        await user.send({ embeds: [dmEmbed] });
                     } catch (err) {
                         console.log(`Couldn't send DM to ${user.tag}`);
                     }

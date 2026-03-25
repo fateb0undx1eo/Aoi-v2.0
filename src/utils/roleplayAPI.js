@@ -1,17 +1,46 @@
 const APIClient = require('./apiClient');
 const logger = require('./winstonLogger');
 
-// Nekos.best API - Free, high quality anime GIFs with no authentication required
-const nekosAPI = new APIClient('https://nekos.best/api/v2', {
-  name: 'NekosBest',
+// Waifu.pics API - Free, high quality anime GIFs with no authentication required
+const waifuPicsAPI = new APIClient('https://api.waifu.pics/sfw', {
+  name: 'WaifuPics',
   retries: 3,
   timeout: 5000,
   cacheType: 'short', // Short cache since we want variety
   cacheTTL: 30 // 30 seconds
 });
 
-// Map our action names to nekos.best endpoints
+// Map our action names to waifu.pics endpoints
 const ACTION_ENDPOINTS = {
+  // Actions with target
+  hug: '/hug',
+  kiss: '/kiss',
+  pat: '/pat',
+  wave: '/wave',
+  poke: '/poke',
+  cuddle: '/cuddle',
+  slap: '/slap',
+  kick: '/kick',
+  bite: '/bite',
+  highfive: '/highfive',
+  bonk: '/bonk',
+  lick: '/lick',
+  bully: '/bully',
+  kill: '/kill',
+  
+  // Solo actions
+  cry: '/cry',
+  smile: '/smile',
+  dance: '/dance',
+  happy: '/happy',
+  blush: '/blush',
+  wink: '/wink',
+  yawn: '/yawn',
+  
+  // Special
+  waifu: '/waifu',
+  nom: '/nom'
+};
   // Actions with target
   hug: '/hug',
   kiss: '/kiss',
@@ -62,23 +91,33 @@ const ACTION_ENDPOINTS = {
   husbando: '/husbando'
 };
 
-// Actions that don't have direct nekos.best endpoints - use alternatives
+// Actions that don't have direct waifu.pics endpoints - use alternatives
 const FALLBACK_ACTIONS = {
   peck: '/kiss',  // Use kiss as fallback
-  shoot: '/punch', // Use punch as fallback
+  shoot: '/kill', // Use kill as fallback
   handshake: '/highfive', // Use highfive as fallback
-  tableflip: '/pout', // Use pout as fallback
+  tableflip: '/bonk', // Use bonk as fallback
   thumbsup: '/happy', // Use happy as fallback
   yeet: '/kick', // Use kick as fallback
   handhold: '/cuddle', // Use cuddle as fallback
-  think: '/think', // Nekos.best has think
-  nope: '/facepalm', // Use facepalm as fallback
-  nod: '/nod', // Nekos.best has nod
-  sleep: '/sleep', // Nekos.best has sleep
-  lurk: '/lurk', // Nekos.best has lurk
-  smug: '/smug', // Nekos.best has smug
-  stare: '/stare', // Nekos.best has stare
-  nom: '/nom' // Nekos.best has nom
+  pout: '/blush', // Use blush as fallback
+  think: '/smile', // Use smile as fallback
+  nope: '/bonk', // Use bonk as fallback
+  nod: '/wave', // Use wave as fallback
+  sleep: '/yawn', // Use yawn as fallback
+  shrug: '/smile', // Use smile as fallback
+  lurk: '/smile', // Use smile as fallback
+  smug: '/smile', // Use smile as fallback
+  stare: '/smile', // Use smile as fallback
+  husbando: '/waifu', // Use waifu for husbando
+  tickle: '/poke', // Use poke as fallback
+  feed: '/nom', // Use nom as fallback
+  punch: '/slap', // Use slap as fallback
+  run: '/dance', // Use dance as fallback
+  facepalm: '/bonk', // Use bonk as fallback
+  bored: '/yawn', // Use yawn as fallback
+  angry: '/bonk', // Use bonk as fallback
+  laugh: '/smile' // Use smile as fallback
 };
 
 /**
@@ -93,24 +132,24 @@ async function getRoleplayGIF(action) {
     if (!endpoint) {
       logger.warn(`No endpoint found for roleplay action: ${action}`);
       // Return a default cute anime GIF
-      const data = await nekosAPI.get('/wave', { skipCache: true });
-      return data.results[0].url;
+      const data = await waifuPicsAPI.get('/wave', { skipCache: true });
+      return data.url;
     }
     
-    // Nekos.best returns data in format: { results: [{ url: "gif_url", anime_name: "..." }] }
-    const data = await nekosAPI.get(endpoint, { skipCache: true });
+    // Waifu.pics returns data in format: { url: "gif_url" }
+    const data = await waifuPicsAPI.get(endpoint, { skipCache: true });
     
-    if (!data || !data.results || !data.results[0] || !data.results[0].url) {
+    if (!data || !data.url) {
       throw new Error('Invalid API response');
     }
     
-    return data.results[0].url;
+    return data.url;
     
   } catch (error) {
     logger.error(`Failed to fetch roleplay GIF for ${action}:`, error);
     
     // Fallback to a default image
-    return 'https://media.tenor.com/images/503c9c7bf7e4c5f0c5d8f5e5c5f0c5d8/tenor.gif';
+    return 'https://i.waifu.pics/A3ljLak.gif';
   }
 }
 
