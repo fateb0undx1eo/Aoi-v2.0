@@ -14,82 +14,130 @@ const { updateInterval, stopAutoPoster, getAutoPosterState } = require('../../fu
 const subreddits = require('../../functions/handlers/subreddits');
 
 async function handleAutopostInteractions(interaction) {
-    // Button handlers
+    // ==================== BUTTON HANDLERS ====================
     if (interaction.isButton() && interaction.customId.startsWith('autopost_')) {
         const action = interaction.customId.split('_')[1];
 
-        if (action === 'setup') {
+        // Configure/Setup button - Start configuration flow
+        if (action === 'configure') {
             const channelRow = new ActionRowBuilder()
                 .addComponents(
                     new ChannelSelectMenuBuilder()
                         .setCustomId('autopost_channel_select')
-                        .setPlaceholder('Select a channel for memes')
+                        .setPlaceholder('Select channel for meme posts')
                         .addChannelTypes(ChannelType.GuildText)
                 );
 
+            const embed = new EmbedBuilder()
+                .setColor('#3498db')
+                .setTitle('Configuration - Step 1 of 4')
+                .setDescription('Select the channel where memes will be posted')
+                .setFooter({ text: 'Auto-Post Configuration' });
+
             await interaction.update({
-                content: '**Step 1/3:** Select the channel for meme posts',
-                embeds: [],
+                embeds: [embed],
                 components: [channelRow]
             });
             return true;
         }
 
+        // Statistics button - Show detailed stats
         if (action === 'stats') {
             const state = getAutoPosterState();
+            
+            if (!state.running) {
+                await interaction.reply({ 
+                    content: 'Auto-posting is not currently active. No statistics available.', 
+                    ephemeral: true 
+                });
+                return true;
+            }
+
             const channel = interaction.client.channels.cache.get(state.channelId);
             const nextPostTime = Math.floor((Date.now() + state.intervalSeconds * 1000) / 1000);
+            const uptime = state.startTime ? Math.floor((Date.now() - state.startTime) / 1000) : 0;
+            const hours = Math.floor(uptime / 3600);
+            const minutes = Math.floor((uptime % 3600) / 60);
 
             const embed = new EmbedBuilder()
-                .setColor('#0099ff')
+                .setColor('#2ecc71')
                 .setTitle('Auto-Post Statistics')
+                .setDescription('Detailed information about the current auto-posting session')
                 .addFields(
-                    { name: 'Channel', value: channel ? `${channel}` : 'Unknown', inline: true },
-                    { name: 'Interval', value: `${state.intervalSeconds}s`, inline: true },
+                    { name: 'Configuration', value: '\u200b', inline: false },
+                    { name: 'Target Channel', value: channel ? `${channel}` : 'Unknown', inline: true },
+                    { name: 'Post Interval', value: `${state.intervalSeconds} seconds`, inline: true },
                     { name: 'Ping Role', value: state.pingRoleId ? `<@&${state.pingRoleId}>` : 'None', inline: true },
-                    { name: 'Next Post', value: `<t:${nextPostTime}:R>`, inline: true },
+                    { name: '\u200b', value: '\u200b', inline: false },
+                    { name: 'Activity', value: '\u200b', inline: false },
                     { name: 'Total Posts', value: `${state.totalPosts || 0}`, inline: true },
-                    { name: 'Subreddits', value: `${subreddits.length}`, inline: true },
-                    { name: 'Auto-React', value: state.autoReact && state.autoReact.length > 0 ? state.autoReact.join(' ') : 'None', inline: true }
+                    { name: 'Session Uptime', value: `${hours}h ${minutes}m`, inline: true },
+                    { name: 'Next Post', value: `<t:${nextPostTime}:R>`, inline: true },
+                    { name: '\u200b', value: '\u200b', inline: false },
+                    { name: 'Content Sources', value: '\u200b', inline: false },
+                    { name: 'Total Subreddits', value: `${subreddits.length}`, inline: true },
+                    { name: 'Auto-React', value: state.autoReact && state.autoReact.length > 0 ? state.autoReact.join(' ') : 'Disabled', inline: true }
                 )
-                .setDescription(`**Top Subreddits:**\n${subreddits.slice(0, 10).map(s => `• r/${s}`).join('\n')}`)
-                .setTimestamp();
+                .addFields({
+                    name: 'Top Subreddits',
+                    value: subreddits.slice(0, 15).map((s, i) => `${i + 1}. r/${s}`).join('\n'),
+                    inline: false
+                })
+                .setTimestamp()
+                .setFooter({ text: 'Auto-Post Statistics' });
 
             await interaction.reply({ embeds: [embed], ephemeral: true });
             return true;
         }
 
+        // Stop button - Stop auto-posting
         if (action === 'stop') {
             stopAutoPoster();
+            
+            const embed = new EmbedBuilder()
+                .setColor('#e74c3c')
+                .setTitle('Auto-Post Stopped')
+                .setDescription('Auto-posting has been successfully stopped.')
+                .setTimestamp();
+
             await interaction.update({
-                content: '✅ Auto-posting has been stopped.',
-                embeds: [],
+                embeds: [embed],
                 components: []
             });
             return true;
         }
 
-        if (action === 'skip' && interaction.customId === 'autopost_skip_role') {
-            await interaction.deferUpdate().catch(console.error);
+        // Continue button - After role selection
+        if (action === 'continue') {
+            const setupData = interaction.client.autopostSetup?.get(interaction.user.id);
             
+            if (!setupData || !setupData.channelId) {
+                await interaction.reply({ 
+                    content: 'Configuration data not found. Please start over with /autopost', 
+                    ephemeral: true 
+                });
+                return true;
+            }
+
             const modal = new ModalBuilder()
                 .setCustomId('autopost_config_modal')
-                .setTitle('Configure Auto-Post');
+                .setTitle('Auto-Post Configuration');
 
             const intervalInput = new TextInputBuilder()
                 .setCustomId('interval')
-                .setLabel('Interval in seconds (minimum 10)')
+                .setLabel('Post interval in seconds')
                 .setStyle(TextInputStyle.Short)
-                .setPlaceholder('60')
+                .setPlaceholder('Minimum: 10 seconds')
+                .setValue('60')
                 .setRequired(true)
                 .setMinLength(2)
                 .setMaxLength(6);
 
             const reactInput = new TextInputBuilder()
                 .setCustomId('reactions')
-                .setLabel('Auto-react emojis (optional)')
+                .setLabel('Auto-react emojis (space separated)')
                 .setStyle(TextInputStyle.Short)
-                .setPlaceholder('👍 👎 😂')
+                .setPlaceholder('Example: 👍 😂 ❤️ (leave empty to disable)')
                 .setRequired(false)
                 .setMaxLength(100);
 
@@ -100,104 +148,154 @@ async function handleAutopostInteractions(interaction) {
             await interaction.showModal(modal).catch(console.error);
             return true;
         }
+
+        // Skip role button
+        if (action === 'skip') {
+            const setupData = interaction.client.autopostSetup?.get(interaction.user.id);
+            
+            if (!setupData) {
+                await interaction.reply({ 
+                    content: 'Configuration data not found. Please start over with /autopost', 
+                    ephemeral: true 
+                });
+                return true;
+            }
+
+            setupData.roleId = null;
+            interaction.client.autopostSetup.set(interaction.user.id, setupData);
+
+            const embed = new EmbedBuilder()
+                .setColor('#3498db')
+                .setTitle('Configuration - Step 3 of 4')
+                .setDescription('Role selection skipped. Click Continue to proceed with final configuration.')
+                .addFields(
+                    { name: 'Selected Channel', value: `<#${setupData.channelId}>`, inline: true },
+                    { name: 'Ping Role', value: 'None', inline: true }
+                )
+                .setFooter({ text: 'Auto-Post Configuration' });
+
+            const buttonRow = new ActionRowBuilder()
+                .addComponents(
+                    new ButtonBuilder()
+                        .setCustomId('autopost_continue')
+                        .setLabel('Continue')
+                        .setStyle(ButtonStyle.Primary)
+                );
+
+            await interaction.update({
+                embeds: [embed],
+                components: [buttonRow]
+            });
+            return true;
+        }
     }
 
-    // Channel select handler
+    // ==================== CHANNEL SELECT HANDLER ====================
     if (interaction.isChannelSelectMenu() && interaction.customId === 'autopost_channel_select') {
         await interaction.deferUpdate().catch(console.error);
         
         const selectedChannel = interaction.channels.first();
         
-        if (!interaction.client.autopostSetup) interaction.client.autopostSetup = new Map();
+        if (!interaction.client.autopostSetup) {
+            interaction.client.autopostSetup = new Map();
+        }
         
         const setupData = interaction.client.autopostSetup.get(interaction.user.id) || {};
         setupData.channelId = selectedChannel.id;
         interaction.client.autopostSetup.set(interaction.user.id, setupData);
 
+        const embed = new EmbedBuilder()
+            .setColor('#3498db')
+            .setTitle('Configuration - Step 2 of 4')
+            .setDescription('Select a role to ping with each meme post (optional)')
+            .addFields(
+                { name: 'Selected Channel', value: `${selectedChannel}`, inline: false }
+            )
+            .setFooter({ text: 'Auto-Post Configuration' });
+
         const roleRow = new ActionRowBuilder()
             .addComponents(
                 new RoleSelectMenuBuilder()
                     .setCustomId('autopost_role_select')
-                    .setPlaceholder('Select a role to ping (optional)')
+                    .setPlaceholder('Select role to ping (optional)')
             );
 
         const buttonRow = new ActionRowBuilder()
             .addComponents(
                 new ButtonBuilder()
-                    .setCustomId('autopost_skip_role')
+                    .setCustomId('autopost_skip')
                     .setLabel('Skip')
                     .setStyle(ButtonStyle.Secondary)
             );
 
         await interaction.editReply({
-            content: `✅ Channel selected: ${selectedChannel}\n\n**Step 2/3:** Select a role to ping (optional)`,
+            embeds: [embed],
             components: [roleRow, buttonRow]
         }).catch(console.error);
         return true;
     }
 
-    // Role select handler
+    // ==================== ROLE SELECT HANDLER ====================
     if (interaction.isRoleSelectMenu() && interaction.customId === 'autopost_role_select') {
+        await interaction.deferUpdate().catch(console.error);
+        
         const selectedRole = interaction.roles.first();
         
-        if (!interaction.client.autopostSetup) interaction.client.autopostSetup = new Map();
+        if (!interaction.client.autopostSetup) {
+            interaction.client.autopostSetup = new Map();
+        }
         
         const setupData = interaction.client.autopostSetup.get(interaction.user.id) || {};
         setupData.roleId = selectedRole?.id;
         interaction.client.autopostSetup.set(interaction.user.id, setupData);
 
-        const modal = new ModalBuilder()
-            .setCustomId('autopost_config_modal')
-            .setTitle('Configure Auto-Post');
+        const embed = new EmbedBuilder()
+            .setColor('#3498db')
+            .setTitle('Configuration - Step 3 of 4')
+            .setDescription('Role selected. Click Continue to proceed with final configuration.')
+            .addFields(
+                { name: 'Selected Channel', value: `<#${setupData.channelId}>`, inline: true },
+                { name: 'Ping Role', value: selectedRole ? `${selectedRole}` : 'None', inline: true }
+            )
+            .setFooter({ text: 'Auto-Post Configuration' });
 
-        const intervalInput = new TextInputBuilder()
-            .setCustomId('interval')
-            .setLabel('Interval in seconds (minimum 10)')
-            .setStyle(TextInputStyle.Short)
-            .setPlaceholder('60')
-            .setRequired(true)
-            .setMinLength(2)
-            .setMaxLength(6);
+        const buttonRow = new ActionRowBuilder()
+            .addComponents(
+                new ButtonBuilder()
+                    .setCustomId('autopost_continue')
+                    .setLabel('Continue')
+                    .setStyle(ButtonStyle.Primary)
+            );
 
-        const reactInput = new TextInputBuilder()
-            .setCustomId('reactions')
-            .setLabel('Auto-react emojis (optional)')
-            .setStyle(TextInputStyle.Short)
-            .setPlaceholder('👍 👎 😂')
-            .setRequired(false)
-            .setMaxLength(100);
-
-        const row1 = new ActionRowBuilder().addComponents(intervalInput);
-        const row2 = new ActionRowBuilder().addComponents(reactInput);
-        modal.addComponents(row1, row2);
-
-        await interaction.showModal(modal).catch(err => {
-            console.error('Error showing modal:', err);
-            interaction.reply({ content: '❌ Failed to open modal. Please try again.', ephemeral: true }).catch(() => {});
-        });
+        await interaction.editReply({
+            embeds: [embed],
+            components: [buttonRow]
+        }).catch(console.error);
         return true;
     }
 
-    // Modal submission handler
+    // ==================== MODAL SUBMISSION HANDLER ====================
     if (interaction.isModalSubmit() && interaction.customId === 'autopost_config_modal') {
         const intervalSec = parseInt(interaction.fields.getTextInputValue('interval'));
         const reactionsInput = interaction.fields.getTextInputValue('reactions').trim();
-        const reactions = reactionsInput ? reactionsInput.split(/\s+/) : [];
+        const reactions = reactionsInput ? reactionsInput.split(/\s+/).filter(r => r.length > 0) : [];
         
         if (isNaN(intervalSec) || intervalSec < 10) {
-            return interaction.reply({ 
-                content: '❌ Invalid interval. Must be a number >= 10 seconds.', 
+            await interaction.reply({ 
+                content: 'Invalid interval. Must be a number greater than or equal to 10 seconds.', 
                 ephemeral: true 
             }).catch(console.error);
+            return true;
         }
 
         const setupData = interaction.client.autopostSetup?.get(interaction.user.id);
         
         if (!setupData || !setupData.channelId) {
-            return interaction.reply({ 
-                content: '❌ Setup data not found. Please start over with /autopost', 
+            await interaction.reply({ 
+                content: 'Configuration data not found. Please start over with /autopost', 
                 ephemeral: true 
             }).catch(console.error);
+            return true;
         }
 
         const success = updateInterval(
@@ -210,21 +308,29 @@ async function handleAutopostInteractions(interaction) {
 
         if (success) {
             const channel = interaction.client.channels.cache.get(setupData.channelId);
+            const nextPostTime = Math.floor((Date.now() + intervalSec * 1000) / 1000);
+            
             const embed = new EmbedBuilder()
-                .setColor('#00ff00')
-                .setTitle('Auto-Post Started')
-                .setDescription(`Memes will be posted every **${intervalSec} seconds** in ${channel}`)
+                .setColor('#2ecc71')
+                .setTitle('Auto-Post Activated')
+                .setDescription('Configuration complete. Auto-posting is now active.')
                 .addFields(
+                    { name: 'Channel', value: channel ? `${channel}` : 'Unknown', inline: true },
+                    { name: 'Interval', value: `${intervalSec} seconds`, inline: true },
                     { name: 'Ping Role', value: setupData.roleId ? `<@&${setupData.roleId}>` : 'None', inline: true },
-                    { name: 'Auto-React', value: reactions.length > 0 ? reactions.join(' ') : 'None', inline: true },
-                    { name: 'Next Post', value: `<t:${Math.floor((Date.now() + intervalSec * 1000) / 1000)}:R>`, inline: true }
+                    { name: 'Auto-React', value: reactions.length > 0 ? reactions.join(' ') : 'Disabled', inline: true },
+                    { name: 'Next Post', value: `<t:${nextPostTime}:R>`, inline: true }
                 )
-                .setTimestamp();
+                .setTimestamp()
+                .setFooter({ text: 'Auto-Post System' });
 
             interaction.client.autopostSetup.delete(interaction.user.id);
             await interaction.reply({ embeds: [embed], ephemeral: true }).catch(console.error);
         } else {
-            await interaction.reply({ content: '❌ Failed to start auto-post.', ephemeral: true }).catch(console.error);
+            await interaction.reply({ 
+                content: 'Failed to start auto-posting. Please try again.', 
+                ephemeral: true 
+            }).catch(console.error);
         }
         return true;
     }

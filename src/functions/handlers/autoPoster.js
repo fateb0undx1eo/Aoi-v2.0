@@ -7,6 +7,7 @@ let seconds = 3600; // default 1 hour
 let pingRoleId = null;
 let totalPosts = 0;
 let lastPostTime = null;
+let startTime = null; // track when auto-posting started
 let autoReact = []; // array of emojis to auto-react
 
 /**
@@ -67,6 +68,7 @@ function startAutoPoster(client, id, sec = 3600, roleId = null, reactions = []) 
   seconds = sec;
   pingRoleId = roleId;
   autoReact = reactions || [];
+  startTime = Date.now(); // track start time
 
   if (interval) clearInterval(interval);
 
@@ -109,6 +111,7 @@ function stopAutoPoster() {
   if (interval) {
     clearInterval(interval);
     interval = null;
+    startTime = null; // reset start time
     console.log("✅ Auto-poster stopped.");
     return true;
   }
@@ -126,6 +129,7 @@ function getAutoPosterState() {
     pingRoleId,
     totalPosts,
     lastPostTime,
+    startTime,
     autoReact,
   };
 }
