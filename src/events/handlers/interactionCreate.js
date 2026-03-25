@@ -322,6 +322,9 @@ if (interaction.isButton() && interaction.customId.startsWith('autopost_')) {
     }
 
     if (action === 'skip' && interaction.customId === 'autopost_skip_role') {
+        // Acknowledge immediately
+        await interaction.deferUpdate().catch(console.error);
+        
         // Skip role selection, go to interval
         const modal = new ModalBuilder()
             .setCustomId('autopost_interval_modal')
@@ -339,20 +342,23 @@ if (interaction.isButton() && interaction.customId.startsWith('autopost_')) {
         const row = new ActionRowBuilder().addComponents(intervalInput);
         modal.addComponents(row);
 
-        await interaction.showModal(modal);
+        await interaction.showModal(modal).catch(console.error);
         return;
     }
 
     if (action === 'skip' && interaction.customId === 'autopost_skip_react') {
+        // Acknowledge immediately
+        await interaction.deferUpdate().catch(console.error);
+        
         // Skip auto-react, finalize setup
         const setupData = interaction.client.autopostSetup?.get(interaction.user.id);
         const intervalSec = setupData?.interval;
         
         if (!setupData || !setupData.channelId || !intervalSec) {
-            return interaction.update({ 
+            return interaction.editReply({ 
                 content: '❌ Setup data not found. Please start over with /autopost', 
                 components: []
-            });
+            }).catch(console.error);
         }
 
         const success = updateInterval(
@@ -377,9 +383,9 @@ if (interaction.isButton() && interaction.customId.startsWith('autopost_')) {
                 .setTimestamp();
 
             interaction.client.autopostSetup.delete(interaction.user.id);
-            await interaction.update({ content: '', embeds: [embed], components: [] });
+            await interaction.editReply({ content: '', embeds: [embed], components: [] }).catch(console.error);
         } else {
-            await interaction.update({ content: '❌ Failed to start auto-post.', components: [] });
+            await interaction.editReply({ content: '❌ Failed to start auto-post.', components: [] }).catch(console.error);
         }
         return;
     }
