@@ -387,6 +387,9 @@ if (interaction.isButton() && interaction.customId.startsWith('autopost_')) {
 
 // Handle channel select for autopost
 if (interaction.isChannelSelectMenu() && interaction.customId === 'autopost_channel_select') {
+    // Acknowledge immediately to prevent timeout
+    await interaction.deferUpdate().catch(console.error);
+    
     const selectedChannel = interaction.channels.first();
     
     if (!interaction.client.autopostSetup) interaction.client.autopostSetup = new Map();
@@ -396,6 +399,8 @@ if (interaction.isChannelSelectMenu() && interaction.customId === 'autopost_chan
     interaction.client.autopostSetup.set(interaction.user.id, setupData);
 
     // Show role selector with skip button
+    const { ActionRowBuilder, RoleSelectMenuBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
+    
     const roleRow = new ActionRowBuilder()
         .addComponents(
             new RoleSelectMenuBuilder()
@@ -411,11 +416,12 @@ if (interaction.isChannelSelectMenu() && interaction.customId === 'autopost_chan
                 .setStyle(ButtonStyle.Secondary)
         );
 
-    await interaction.update({
+    await interaction.editReply({
         content: `✅ Channel selected: ${selectedChannel}\n\n**Step 2/4:** Select a role to ping (optional)`,
         components: [roleRow, buttonRow]
-    });
+    }).catch(console.error);
     return;
+}
 }
 
 // Handle role select for autopost
