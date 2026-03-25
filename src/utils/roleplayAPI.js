@@ -1,45 +1,69 @@
 const APIClient = require('./apiClient');
 const logger = require('./winstonLogger');
 
-// Waifu.pics API - Free, high quality anime GIFs with no authentication required
+// Multiple API clients for comprehensive coverage
 const waifuPicsAPI = new APIClient('https://api.waifu.pics/sfw', {
   name: 'WaifuPics',
   retries: 3,
   timeout: 5000,
-  cacheType: 'short', // Short cache since we want variety
-  cacheTTL: 30 // 30 seconds
+  cacheType: 'short',
+  cacheTTL: 30
 });
 
-// Map our action names to waifu.pics endpoints
-const ACTION_ENDPOINTS = {
-  // Actions with target
-  hug: '/hug',
-  kiss: '/kiss',
-  pat: '/pat',
-  wave: '/wave',
-  poke: '/poke',
-  cuddle: '/cuddle',
-  slap: '/slap',
-  kick: '/kick',
-  bite: '/bite',
-  highfive: '/highfive',
-  bonk: '/bonk',
-  lick: '/lick',
-  bully: '/bully',
-  kill: '/kill',
+const nekosAPI = new APIClient('https://nekos.best/api/v2', {
+  name: 'NekosBest',
+  retries: 3,
+  timeout: 5000,
+  cacheType: 'short',
+  cacheTTL: 30
+});
+
+// API endpoint mapping with source specification
+const API_ENDPOINTS = {
+  // Waifu.pics endpoints (high quality roleplay GIFs)
+  hug: { api: 'waifupics', endpoint: '/hug' },
+  kiss: { api: 'waifupics', endpoint: '/kiss' },
+  pat: { api: 'waifupics', endpoint: '/pat' },
+  wave: { api: 'waifupics', endpoint: '/wave' },
+  poke: { api: 'waifupics', endpoint: '/poke' },
+  cuddle: { api: 'waifupics', endpoint: '/cuddle' },
+  slap: { api: 'waifupics', endpoint: '/slap' },
+  kick: { api: 'waifupics', endpoint: '/kick' },
+  bite: { api: 'waifupics', endpoint: '/bite' },
+  highfive: { api: 'waifupics', endpoint: '/highfive' },
+  bonk: { api: 'waifupics', endpoint: '/bonk' },
+  lick: { api: 'waifupics', endpoint: '/lick' },
+  bully: { api: 'waifupics', endpoint: '/bully' },
+  kill: { api: 'waifupics', endpoint: '/kill' },
+  cry: { api: 'waifupics', endpoint: '/cry' },
+  smile: { api: 'waifupics', endpoint: '/smile' },
+  dance: { api: 'waifupics', endpoint: '/dance' },
+  happy: { api: 'waifupics', endpoint: '/happy' },
+  blush: { api: 'waifupics', endpoint: '/blush' },
+  wink: { api: 'waifupics', endpoint: '/wink' },
+  yawn: { api: 'waifupics', endpoint: '/yawn' },
+  nom: { api: 'waifupics', endpoint: '/nom' },
+  waifu: { api: 'waifupics', endpoint: '/waifu' },
   
-  // Solo actions
-  cry: '/cry',
-  smile: '/smile',
-  dance: '/dance',
-  happy: '/happy',
-  blush: '/blush',
-  wink: '/wink',
-  yawn: '/yawn',
-  
-  // Special
-  waifu: '/waifu',
-  nom: '/nom'
+  // Nekos.best endpoints (additional actions)
+  baka: { api: 'nekos', endpoint: '/baka' },
+  think: { api: 'nekos', endpoint: '/think' },
+  pout: { api: 'nekos', endpoint: '/pout' },
+  shrug: { api: 'nekos', endpoint: '/shrug' },
+  sleep: { api: 'nekos', endpoint: '/sleep' },
+  stare: { api: 'nekos', endpoint: '/stare' },
+  smug: { api: 'nekos', endpoint: '/smug' },
+  nod: { api: 'nekos', endpoint: '/nod' },
+  nope: { api: 'nekos', endpoint: '/nope' },
+  handshake: { api: 'nekos', endpoint: '/handshake' },
+  lurk: { api: 'nekos', endpoint: '/lurk' },
+  facepalm: { api: 'nekos', endpoint: '/facepalm' },
+  laugh: { api: 'nekos', endpoint: '/laugh' },
+  feed: { api: 'nekos', endpoint: '/feed' },
+  tickle: { api: 'nekos', endpoint: '/tickle' },
+  punch: { api: 'nekos', endpoint: '/punch' },
+  shoot: { api: 'nekos', endpoint: '/shoot' },
+  husbando: { api: 'nekos', endpoint: '/husbando' }
 };
   // Actions with target
   hug: '/hug',
@@ -91,33 +115,16 @@ const ACTION_ENDPOINTS = {
   husbando: '/husbando'
 };
 
-// Actions that don't have direct waifu.pics endpoints - use alternatives
+// Fallback mappings for actions not in primary APIs
 const FALLBACK_ACTIONS = {
-  peck: '/kiss',  // Use kiss as fallback
-  shoot: '/kill', // Use kill as fallback
-  handshake: '/highfive', // Use highfive as fallback
-  tableflip: '/bonk', // Use bonk as fallback
-  thumbsup: '/happy', // Use happy as fallback
-  yeet: '/kick', // Use kick as fallback
-  handhold: '/cuddle', // Use cuddle as fallback
-  pout: '/blush', // Use blush as fallback
-  think: '/smile', // Use smile as fallback
-  nope: '/bonk', // Use bonk as fallback
-  nod: '/wave', // Use wave as fallback
-  sleep: '/yawn', // Use yawn as fallback
-  shrug: '/smile', // Use smile as fallback
-  lurk: '/smile', // Use smile as fallback
-  smug: '/smile', // Use smile as fallback
-  stare: '/smile', // Use smile as fallback
-  husbando: '/waifu', // Use waifu for husbando
-  tickle: '/poke', // Use poke as fallback
-  feed: '/nom', // Use nom as fallback
-  punch: '/slap', // Use slap as fallback
-  run: '/dance', // Use dance as fallback
-  facepalm: '/bonk', // Use bonk as fallback
-  bored: '/yawn', // Use yawn as fallback
-  angry: '/bonk', // Use bonk as fallback
-  laugh: '/smile' // Use smile as fallback
+  peck: { api: 'waifupics', endpoint: '/kiss' },
+  yeet: { api: 'waifupics', endpoint: '/kick' },
+  handhold: { api: 'waifupics', endpoint: '/cuddle' },
+  tableflip: { api: 'nekos', endpoint: '/pout' },
+  thumbsup: { api: 'waifupics', endpoint: '/happy' },
+  run: { api: 'waifupics', endpoint: '/dance' },
+  bored: { api: 'nekos', endpoint: '/sleep' },
+  angry: { api: 'waifupics', endpoint: '/bonk' }
 };
 
 /**
@@ -127,23 +134,31 @@ const FALLBACK_ACTIONS = {
  */
 async function getRoleplayGIF(action) {
   try {
-    const endpoint = ACTION_ENDPOINTS[action] || FALLBACK_ACTIONS[action];
+    const config = API_ENDPOINTS[action] || FALLBACK_ACTIONS[action];
     
-    if (!endpoint) {
+    if (!config) {
       logger.warn(`No endpoint found for roleplay action: ${action}`);
       // Return a default cute anime GIF
       const data = await waifuPicsAPI.get('/wave', { skipCache: true });
       return data.url;
     }
     
-    // Waifu.pics returns data in format: { url: "gif_url" }
-    const data = await waifuPicsAPI.get(endpoint, { skipCache: true });
-    
-    if (!data || !data.url) {
-      throw new Error('Invalid API response');
+    // Route to appropriate API based on config
+    if (config.api === 'waifupics') {
+      const data = await waifuPicsAPI.get(config.endpoint, { skipCache: true });
+      if (!data || !data.url) {
+        throw new Error('Invalid API response from waifu.pics');
+      }
+      return data.url;
+    } else if (config.api === 'nekos') {
+      const data = await nekosAPI.get(config.endpoint, { skipCache: true });
+      if (!data || !data.results || !data.results[0] || !data.results[0].url) {
+        throw new Error('Invalid API response from nekos.best');
+      }
+      return data.results[0].url;
     }
     
-    return data.url;
+    throw new Error('Unknown API source');
     
   } catch (error) {
     logger.error(`Failed to fetch roleplay GIF for ${action}:`, error);
@@ -159,7 +174,7 @@ async function getRoleplayGIF(action) {
  * @returns {boolean} True if supported
  */
 function isActionSupported(action) {
-  return !!(ACTION_ENDPOINTS[action] || FALLBACK_ACTIONS[action]);
+  return !!(API_ENDPOINTS[action] || FALLBACK_ACTIONS[action]);
 }
 
 /**
@@ -167,7 +182,7 @@ function isActionSupported(action) {
  * @returns {string[]} Array of action names
  */
 function getSupportedActions() {
-  return Object.keys(ACTION_ENDPOINTS);
+  return Object.keys(API_ENDPOINTS);
 }
 
 module.exports = {
