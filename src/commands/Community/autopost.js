@@ -61,14 +61,15 @@ module.exports = {
 
             const embed = new EmbedBuilder()
                 .setColor('#0099ff')
-                .setTitle('📊 Auto-Post Statistics')
+                .setTitle('Auto-Post Statistics')
                 .addFields(
-                    { name: '📺 Channel', value: channel ? `${channel}` : 'Unknown', inline: true },
-                    { name: '⏱️ Interval', value: `${state.intervalSeconds}s`, inline: true },
-                    { name: '📢 Ping Role', value: state.pingRoleId ? `<@&${state.pingRoleId}>` : 'None', inline: true },
-                    { name: '⏰ Next Post', value: `<t:${nextPostTime}:R>`, inline: true },
-                    { name: '📈 Total Posts', value: `${state.totalPosts || 0}`, inline: true },
-                    { name: '📚 Subreddits', value: `${subreddits.length}`, inline: true }
+                    { name: 'Channel', value: channel ? `${channel}` : 'Unknown', inline: true },
+                    { name: 'Interval', value: `${state.intervalSeconds}s`, inline: true },
+                    { name: 'Ping Role', value: state.pingRoleId ? `<@&${state.pingRoleId}>` : 'None', inline: true },
+                    { name: 'Next Post', value: `<t:${nextPostTime}:R>`, inline: true },
+                    { name: 'Total Posts', value: `${state.totalPosts || 0}`, inline: true },
+                    { name: 'Subreddits', value: `${subreddits.length}`, inline: true },
+                    { name: 'Auto-React', value: state.autoReact && state.autoReact.length > 0 ? state.autoReact.join(' ') : 'None', inline: true }
                 )
                 .setDescription(`**Top Subreddits:**\n${subreddits.slice(0, 10).map(s => `• r/${s}`).join('\n')}`)
                 .setTimestamp();
@@ -81,10 +82,10 @@ module.exports = {
         
         const embed = new EmbedBuilder()
             .setColor(state.running ? '#00ff00' : '#ff9900')
-            .setTitle('🎭 Meme Auto-Post Manager')
+            .setTitle('Meme Auto-Post Manager')
             .setDescription(state.running 
-                ? '✅ Auto-posting is currently **active**\n\nChoose an action below:'
-                : '⚠️ Auto-posting is currently **inactive**\n\nChoose an action below:'
+                ? '✅ Auto-posting is currently active\n\nChoose an action below:'
+                : '⚠️ Auto-posting is currently inactive\n\nChoose an action below:'
             );
 
         if (state.running) {
@@ -92,12 +93,12 @@ module.exports = {
             const nextPostTime = Math.floor((Date.now() + state.intervalSeconds * 1000) / 1000);
             
             embed.addFields(
-                { name: '📺 Channel', value: channel ? `${channel}` : 'Unknown', inline: true },
-                { name: '⏱️ Interval', value: `${state.intervalSeconds}s`, inline: true },
-                { name: '📢 Ping Role', value: state.pingRoleId ? `<@&${state.pingRoleId}>` : 'None', inline: true },
-                { name: '⏰ Next Post', value: `<t:${nextPostTime}:R>`, inline: true },
-                { name: '📈 Total Posts', value: `${state.totalPosts || 0}`, inline: true },
-                { name: '📚 Subreddits', value: `${subreddits.length}`, inline: true }
+                { name: 'Channel', value: channel ? `${channel}` : 'Unknown', inline: true },
+                { name: 'Interval', value: `${state.intervalSeconds}s`, inline: true },
+                { name: 'Ping Role', value: state.pingRoleId ? `<@&${state.pingRoleId}>` : 'None', inline: true },
+                { name: 'Next Post', value: `<t:${nextPostTime}:R>`, inline: true },
+                { name: 'Total Posts', value: `${state.totalPosts || 0}`, inline: true },
+                { name: 'Subreddits', value: `${subreddits.length}`, inline: true }
             );
         }
 
@@ -105,20 +106,17 @@ module.exports = {
             .addComponents(
                 new ButtonBuilder()
                     .setCustomId('autopost_setup')
-                    .setLabel(state.running ? 'Reconfigure' : 'Start Setup')
-                    .setStyle(ButtonStyle.Primary)
-                    .setEmoji('⚙️'),
+                    .setLabel(state.running ? 'Reconfigure' : 'Start')
+                    .setStyle(ButtonStyle.Primary),
                 new ButtonBuilder()
                     .setCustomId('autopost_stats')
-                    .setLabel('View Stats')
+                    .setLabel('Stats')
                     .setStyle(ButtonStyle.Secondary)
-                    .setEmoji('📊')
                     .setDisabled(!state.running),
                 new ButtonBuilder()
                     .setCustomId('autopost_stop')
                     .setLabel('Stop')
                     .setStyle(ButtonStyle.Danger)
-                    .setEmoji('🛑')
                     .setDisabled(!state.running)
             );
 

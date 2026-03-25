@@ -261,6 +261,8 @@ if (interaction.isButton() && interaction.customId.startsWith('autopost_')) {
         ActionRowBuilder,
         ChannelSelectMenuBuilder,
         RoleSelectMenuBuilder,
+        ButtonBuilder,
+        ButtonStyle,
         ChannelType,
         EmbedBuilder
     } = require('discord.js');
@@ -268,7 +270,7 @@ if (interaction.isButton() && interaction.customId.startsWith('autopost_')) {
     const action = interaction.customId.split('_')[1];
 
     if (action === 'setup') {
-        // Show channel and role selectors first
+        // Show channel selector
         const channelRow = new ActionRowBuilder()
             .addComponents(
                 new ChannelSelectMenuBuilder()
@@ -277,17 +279,10 @@ if (interaction.isButton() && interaction.customId.startsWith('autopost_')) {
                     .addChannelTypes(ChannelType.GuildText)
             );
 
-        const roleRow = new ActionRowBuilder()
-            .addComponents(
-                new RoleSelectMenuBuilder()
-                    .setCustomId('autopost_role_select')
-                    .setPlaceholder('Select a role to ping (optional)')
-            );
-
         await interaction.update({
-            content: '**Step 1/2:** Select the channel and role (optional)',
+            content: '**Step 1/4:** Select the channel for meme posts',
             embeds: [],
-            components: [channelRow, roleRow]
+            components: [channelRow]
         });
         return;
     }
@@ -299,14 +294,15 @@ if (interaction.isButton() && interaction.customId.startsWith('autopost_')) {
 
         const embed = new EmbedBuilder()
             .setColor('#0099ff')
-            .setTitle('📊 Auto-Post Statistics')
+            .setTitle('Auto-Post Statistics')
             .addFields(
-                { name: '📺 Channel', value: channel ? `${channel}` : 'Unknown', inline: true },
-                { name: '⏱️ Interval', value: `${state.intervalSeconds}s`, inline: true },
-                { name: '📢 Ping Role', value: state.pingRoleId ? `<@&${state.pingRoleId}>` : 'None', inline: true },
-                { name: '⏰ Next Post', value: `<t:${nextPostTime}:R>`, inline: true },
-                { name: '📈 Total Posts', value: `${state.totalPosts || 0}`, inline: true },
-                { name: '📚 Subreddits', value: `${subreddits.length}`, inline: true }
+                { name: 'Channel', value: channel ? `${channel}` : 'Unknown', inline: true },
+                { name: 'Interval', value: `${state.intervalSeconds}s`, inline: true },
+                { name: 'Ping Role', value: state.pingRoleId ? `<@&${state.pingRoleId}>` : 'None', inline: true },
+                { name: 'Next Post', value: `<t:${nextPostTime}:R>`, inline: true },
+                { name: 'Total Posts', value: `${state.totalPosts || 0}`, inline: true },
+                { name: 'Subreddits', value: `${subreddits.length}`, inline: true },
+                { name: 'Auto-React', value: state.autoReact && state.autoReact.length > 0 ? state.autoReact.join(' ') : 'None', inline: true }
             )
             .setDescription(`**Top Subreddits:**\n${subreddits.slice(0, 10).map(s => `• r/${s}`).join('\n')}`)
             .setTimestamp();
@@ -324,26 +320,105 @@ if (interaction.isButton() && interaction.customId.startsWith('autopost_')) {
         });
         return;
     }
+
+    if (action === 'skip' && interaction.customId === 'autopost_skip_role') {
+        // Skip role selection, go to interval
+        const modal = new ModalBuilder()
+            .setCustomId('autopost_interval_modal')
+            .setTitle('Set Posting Interval');
+
+        const intervalInput = new TextInputBuilder()
+            .setCustomId('interval')
+            .setLabel('Interval in seconds (minimum 10)')
+            .setStyle(TextInputStyle.Short)
+            .setPlaceholder('60')
+            .setRequired(true)
+            .setMinLength(2)
+            .setMaxLength(6);
+
+        const row = new ActionRowBuilder().addComponents(intervalInput);
+        modal.addComponents(row);
+
+        await interaction.showModal(modal);
+        return;
+    }
+
+    if (action === 'skip' && interaction.customId === 'autopost_skip_react') {
+        // Skip auto-react, finalize setup
+        const setupData = interaction.client.autopostSetup?.get(interaction.user.id);
+        const intervalSec = setupData?.interval;
+        
+        if (!setupData || !setupData.channelId || !intervalSec) {
+            return interaction.update({ 
+                content: '❌ Setup data not found. Please start over with /autopost', 
+                components: []
+            });
+        }
+
+        const success = updateInterval(
+            interaction.client, 
+            intervalSec * 1000, 
+            setupData.channelId, 
+            setupData.roleId,
+            [] // no auto-react
+        );
+
+        if (success) {
+            const channel = interaction.client.channels.cache.get(setupData.channelId);
+            const embed = new EmbedBuilder()
+                .setColor('#00ff00')
+                .setTitle('Auto-Post Started')
+                .setDescription(`Memes will be posted every **${intervalSec} seconds** in ${channel}`)
+                .addFields(
+                    { name: 'Ping Role', value: setupData.roleId ? `<@&${setupData.roleId}>` : 'None', inline: true },
+                    { name: 'Auto-React', value: 'None', inline: true },
+                    { name: 'Next Post', value: `<t:${Math.floor((Date.now() + intervalSec * 1000) / 1000)}:R>`, inline: true }
+                )
+                .setTimestamp();
+
+            interaction.client.autopostSetup.delete(interaction.user.id);
+            await interaction.update({ content: '', embeds: [embed], components: [] });
+        } else {
+            await interaction.update({ content: '❌ Failed to start auto-post.', components: [] });
+        }
+        return;
+    }
 }
 
-// Handle channel/role select menus for autopost
+// Handle channel select for autopost
 if (interaction.isChannelSelectMenu() && interaction.customId === 'autopost_channel_select') {
     const selectedChannel = interaction.channels.first();
     
-    // Store in temporary cache (you could use a Map or database)
     if (!interaction.client.autopostSetup) interaction.client.autopostSetup = new Map();
     
     const setupData = interaction.client.autopostSetup.get(interaction.user.id) || {};
     setupData.channelId = selectedChannel.id;
     interaction.client.autopostSetup.set(interaction.user.id, setupData);
 
+    // Show role selector with skip button
+    const roleRow = new ActionRowBuilder()
+        .addComponents(
+            new RoleSelectMenuBuilder()
+                .setCustomId('autopost_role_select')
+                .setPlaceholder('Select a role to ping (optional)')
+        );
+
+    const buttonRow = new ActionRowBuilder()
+        .addComponents(
+            new ButtonBuilder()
+                .setCustomId('autopost_skip_role')
+                .setLabel('Skip')
+                .setStyle(ButtonStyle.Secondary)
+        );
+
     await interaction.update({
-        content: `✅ Channel selected: ${selectedChannel}\n\nNow select a role to ping (or click "Skip" to continue)`,
-        components: interaction.message.components
+        content: `✅ Channel selected: ${selectedChannel}\n\n**Step 2/4:** Select a role to ping (optional)`,
+        components: [roleRow, buttonRow]
     });
     return;
 }
 
+// Handle role select for autopost
 if (interaction.isRoleSelectMenu() && interaction.customId === 'autopost_role_select') {
     const selectedRole = interaction.roles.first();
     
@@ -353,7 +428,7 @@ if (interaction.isRoleSelectMenu() && interaction.customId === 'autopost_role_se
     setupData.roleId = selectedRole?.id;
     interaction.client.autopostSetup.set(interaction.user.id, setupData);
 
-    // Now show modal for interval
+    // Show modal for interval
     const modal = new ModalBuilder()
         .setCustomId('autopost_interval_modal')
         .setTitle('Set Posting Interval');
@@ -387,9 +462,47 @@ if (interaction.isModalSubmit() && interaction.customId === 'autopost_interval_m
         });
     }
 
+    const setupData = interaction.client.autopostSetup?.get(interaction.user.id) || {};
+    setupData.interval = intervalSec;
+    interaction.client.autopostSetup.set(interaction.user.id, setupData);
+
+    if (!setupData.channelId) {
+        return interaction.reply({ 
+            content: '❌ Setup data not found. Please start over with /autopost', 
+            ephemeral: true 
+        });
+    }
+
+    // Ask about auto-react
+    const modal2 = new ModalBuilder()
+        .setCustomId('autopost_react_modal')
+        .setTitle('Auto-React (Optional)');
+
+    const reactInput = new TextInputBuilder()
+        .setCustomId('reactions')
+        .setLabel('Emojis to auto-react (space separated)')
+        .setStyle(TextInputStyle.Short)
+        .setPlaceholder('👍 👎 😂 (leave empty to skip)')
+        .setRequired(false)
+        .setMaxLength(100);
+
+    const row = new ActionRowBuilder().addComponents(reactInput);
+    modal2.addComponents(row);
+
+    await interaction.showModal(modal2);
+    return;
+}
+
+// Handle auto-react modal
+if (interaction.isModalSubmit() && interaction.customId === 'autopost_react_modal') {
+    const { updateInterval } = require('../../functions/handlers/autoPoster');
+    
+    const reactionsInput = interaction.fields.getTextInputValue('reactions').trim();
+    const reactions = reactionsInput ? reactionsInput.split(/\s+/) : [];
+
     const setupData = interaction.client.autopostSetup?.get(interaction.user.id);
     
-    if (!setupData || !setupData.channelId) {
+    if (!setupData || !setupData.channelId || !setupData.interval) {
         return interaction.reply({ 
             content: '❌ Setup data not found. Please start over with /autopost', 
             ephemeral: true 
@@ -398,20 +511,22 @@ if (interaction.isModalSubmit() && interaction.customId === 'autopost_interval_m
 
     const success = updateInterval(
         interaction.client, 
-        intervalSec * 1000, 
+        setupData.interval * 1000, 
         setupData.channelId, 
-        setupData.roleId
+        setupData.roleId,
+        reactions
     );
 
     if (success) {
         const channel = interaction.client.channels.cache.get(setupData.channelId);
         const embed = new EmbedBuilder()
             .setColor('#00ff00')
-            .setTitle('✅ Auto-Post Started')
-            .setDescription(`Memes will be posted every **${intervalSec} seconds** in ${channel}`)
+            .setTitle('Auto-Post Started')
+            .setDescription(`Memes will be posted every **${setupData.interval} seconds** in ${channel}`)
             .addFields(
-                { name: '📢 Ping Role', value: setupData.roleId ? `<@&${setupData.roleId}>` : 'None', inline: true },
-                { name: '⏰ Next Post', value: `<t:${Math.floor((Date.now() + intervalSec * 1000) / 1000)}:R>`, inline: true }
+                { name: 'Ping Role', value: setupData.roleId ? `<@&${setupData.roleId}>` : 'None', inline: true },
+                { name: 'Auto-React', value: reactions.length > 0 ? reactions.join(' ') : 'None', inline: true },
+                { name: 'Next Post', value: `<t:${Math.floor((Date.now() + setupData.interval * 1000) / 1000)}:R>`, inline: true }
             )
             .setTimestamp();
 

@@ -7,6 +7,7 @@ let seconds = 3600; // default 1 hour
 let pingRoleId = null;
 let totalPosts = 0;
 let lastPostTime = null;
+let autoReact = []; // array of emojis to auto-react
 
 /**
  * Post a meme to the specified channel
@@ -28,10 +29,21 @@ async function post(client) {
 
     const messageContent = pingRoleId ? `<@&${pingRoleId}>` : '';
 
-    await channel.send({ 
+    const message = await channel.send({ 
       content: messageContent,
       embeds: [embed] 
     });
+
+    // Auto-react if configured
+    if (autoReact && autoReact.length > 0) {
+      for (const emoji of autoReact) {
+        try {
+          await message.react(emoji);
+        } catch (err) {
+          console.error(`Failed to react with ${emoji}:`, err.message);
+        }
+      }
+    }
 
     totalPosts++;
     lastPostTime = Date.now();
@@ -46,13 +58,15 @@ async function post(client) {
  * @param {string} id Channel ID
  * @param {number} sec Interval in seconds
  * @param {string} [roleId] Optional role ID to ping
+ * @param {string[]} [reactions] Optional array of emojis to auto-react
  */
-function startAutoPoster(client, id, sec = 3600, roleId = null) {
+function startAutoPoster(client, id, sec = 3600, roleId = null, reactions = []) {
   if (!client || !id) return false;
 
   channelId = id;
   seconds = sec;
   pingRoleId = roleId;
+  autoReact = reactions || [];
 
   if (interval) clearInterval(interval);
 
@@ -72,17 +86,19 @@ function startAutoPoster(client, id, sec = 3600, roleId = null) {
  * @param {number} ms Interval in milliseconds
  * @param {string} [id] Optional channel ID to update
  * @param {string} [roleId] Optional role ID to ping
+ * @param {string[]} [reactions] Optional array of emojis to auto-react
  */
-function updateInterval(client, ms, id, roleId) {
+function updateInterval(client, ms, id, roleId, reactions) {
   if (ms < 10000) return false; // min 10s
 
   if (id) channelId = id; // allow updating channel
   if (roleId !== undefined) pingRoleId = roleId; // allow updating role
+  if (reactions !== undefined) autoReact = reactions; // allow updating reactions
 
   if (!channelId) return false;
 
   seconds = Math.floor(ms / 1000);
-  startAutoPoster(client, channelId, seconds, pingRoleId);
+  startAutoPoster(client, channelId, seconds, pingRoleId, autoReact);
   return true;
 }
 
@@ -110,6 +126,7 @@ function getAutoPosterState() {
     pingRoleId,
     totalPosts,
     lastPostTime,
+    autoReact,
   };
 }
 
