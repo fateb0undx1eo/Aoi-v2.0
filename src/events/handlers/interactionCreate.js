@@ -464,7 +464,6 @@ if (interaction.isRoleSelectMenu() && interaction.customId === 'autopost_role_se
     });
     return;
 }
-}
 
 // Handle modal submission for autopost interval
 if (interaction.isModalSubmit() && interaction.customId === 'autopost_interval_modal') {
