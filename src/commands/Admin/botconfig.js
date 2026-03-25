@@ -1,10 +1,10 @@
-const { SlashCommandBuilder, EmbedBuilder, PermissionFlagBits, ActivityType } = require('discord.js');
+const { SlashCommandBuilder, EmbedBuilder, ActivityType } = require('discord.js');
 
 module.exports = {
     data: new SlashCommandBuilder()
         .setName('botconfig')
         .setDescription('Configure bot appearance and presence')
-        .setDefaultMemberPermissions(PermissionFlagBits.Administrator)
+        .setDefaultMemberPermissions('0x0000000000000008') // Administrator permission as string
         .addSubcommand(subcommand =>
             subcommand
                 .setName('presence')
