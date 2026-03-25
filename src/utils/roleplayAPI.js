@@ -1,16 +1,16 @@
 const APIClient = require('./apiClient');
 const logger = require('./winstonLogger');
 
-// Waifu.it API - High quality anime GIFs with extensive collection
-const waifuAPI = new APIClient('https://waifu.it/api/v4', {
-  name: 'WaifuIt',
+// Nekos.best API - Free, high quality anime GIFs with no authentication required
+const nekosAPI = new APIClient('https://nekos.best/api/v2', {
+  name: 'NekosBest',
   retries: 3,
   timeout: 5000,
   cacheType: 'short', // Short cache since we want variety
   cacheTTL: 30 // 30 seconds
 });
 
-// Map our action names to waifu.it endpoints
+// Map our action names to nekos.best endpoints
 const ACTION_ENDPOINTS = {
   // Actions with target
   hug: '/hug',
@@ -62,25 +62,23 @@ const ACTION_ENDPOINTS = {
   husbando: '/husbando'
 };
 
-// Actions that don't have direct waifu.it endpoints - use alternatives
+// Actions that don't have direct nekos.best endpoints - use alternatives
 const FALLBACK_ACTIONS = {
   peck: '/kiss',  // Use kiss as fallback
   shoot: '/punch', // Use punch as fallback
   handshake: '/highfive', // Use highfive as fallback
-  tableflip: '/angry', // Use angry as fallback
+  tableflip: '/pout', // Use pout as fallback
   thumbsup: '/happy', // Use happy as fallback
   yeet: '/kick', // Use kick as fallback
   handhold: '/cuddle', // Use cuddle as fallback
-  pout: '/blush', // Use blush as fallback
-  think: '/bored', // Use bored as fallback
+  think: '/think', // Nekos.best has think
   nope: '/facepalm', // Use facepalm as fallback
-  nod: '/yes', // Use yes as fallback
-  sleep: '/bored', // Use bored as fallback
-  shrug: '/bored', // Use bored as fallback
-  lurk: '/bored', // Use bored as fallback
-  smug: '/smile', // Use smile as fallback
-  stare: '/bored', // Use bored as fallback
-  nom: '/happy' // Use happy as fallback
+  nod: '/nod', // Nekos.best has nod
+  sleep: '/sleep', // Nekos.best has sleep
+  lurk: '/lurk', // Nekos.best has lurk
+  smug: '/smug', // Nekos.best has smug
+  stare: '/stare', // Nekos.best has stare
+  nom: '/nom' // Nekos.best has nom
 };
 
 /**
@@ -95,17 +93,18 @@ async function getRoleplayGIF(action) {
     if (!endpoint) {
       logger.warn(`No endpoint found for roleplay action: ${action}`);
       // Return a default cute anime GIF
-      return 'https://waifu.it/api/v4/wave';
+      const data = await nekosAPI.get('/wave', { skipCache: true });
+      return data.results[0].url;
     }
     
-    // Waifu.it returns data in format: { url: "gif_url" }
-    const data = await waifuAPI.get(endpoint, { skipCache: true });
+    // Nekos.best returns data in format: { results: [{ url: "gif_url", anime_name: "..." }] }
+    const data = await nekosAPI.get(endpoint, { skipCache: true });
     
-    if (!data || !data.url) {
+    if (!data || !data.results || !data.results[0] || !data.results[0].url) {
       throw new Error('Invalid API response');
     }
     
-    return data.url;
+    return data.results[0].url;
     
   } catch (error) {
     logger.error(`Failed to fetch roleplay GIF for ${action}:`, error);
