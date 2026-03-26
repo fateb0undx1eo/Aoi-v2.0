@@ -1,22 +1,41 @@
 const fetchMeme = require("./fetchMeme");
 const { EmbedBuilder } = require("discord.js");
 
-let interval = null;
-let channelId = null;
-let seconds = 3600; // default 1 hour
-let pingRoleId = null;
-let totalPosts = 0;
-let lastPostTime = null;
-let startTime = null; // track when auto-posting started
-let autoReact = []; // array of emojis to auto-react
+// Per-guild state storage
+const guildStates = new Map();
+
+/**
+ * Get or create guild state
+ * @param {string} guildId 
+ * @returns {Object}
+ */
+function getGuildState(guildId) {
+  if (!guildStates.has(guildId)) {
+    guildStates.set(guildId, {
+      interval: null,
+      channelId: null,
+      seconds: 3600,
+      pingRoleId: null,
+      totalPosts: 0,
+      lastPostTime: null,
+      startTime: null,
+      autoReact: []
+    });
+  }
+  return guildStates.get(guildId);
+}
 
 /**
  * Post a meme to the specified channel
  * @param {import('discord.js').Client} client 
+ * @param {string} guildId
  */
-async function post(client) {
-  if (!channelId) return;
-  const channel = client.channels.cache.get(channelId);
+async function post(client, guildId) {
+  const state = getGuildState(guildId);
+  
+  if (!state.channelId) return;
+  
+  const channel = client.channels.cache.get(state.channelId);
   if (!channel) return;
 
   try {
@@ -26,9 +45,9 @@ async function post(client) {
     const embed = new EmbedBuilder()
       .setColor(Math.floor(Math.random() * 16777215))
       .setImage(meme.url)
-      .setFooter({ text: `r/${meme.subreddit} • Post #${totalPosts + 1}` });
+      .setFooter({ text: `r/${meme.subreddit} • Post #${state.totalPosts + 1}` });
 
-    const messageContent = pingRoleId ? `<@&${pingRoleId}>` : '';
+    const messageContent = state.pingRoleId ? `<@&${state.pingRoleId}>` : '';
 
     const message = await channel.send({ 
       content: messageContent,
@@ -36,8 +55,8 @@ async function post(client) {
     });
 
     // Auto-react if configured
-    if (autoReact && autoReact.length > 0) {
-      for (const emoji of autoReact) {
+    if (state.autoReact && state.autoReact.length > 0) {
+      for (const emoji of state.autoReact) {
         try {
           await message.react(emoji);
         } catch (err) {
@@ -46,39 +65,45 @@ async function post(client) {
       }
     }
 
-    totalPosts++;
-    lastPostTime = Date.now();
+    state.totalPosts++;
+    state.lastPostTime = Date.now();
   } catch (err) {
     console.error("AutoPoster Error:", err);
   }
 }
 
 /**
- * Start auto-poster
+ * Start auto-poster for a guild
  * @param {import('discord.js').Client} client 
- * @param {string} id Channel ID
+ * @param {string} channelId Channel ID
  * @param {number} sec Interval in seconds
  * @param {string} [roleId] Optional role ID to ping
  * @param {string[]} [reactions] Optional array of emojis to auto-react
  */
-function startAutoPoster(client, id, sec = 3600, roleId = null, reactions = []) {
-  if (!client || !id) return false;
+function startAutoPoster(client, channelId, sec = 3600, roleId = null, reactions = []) {
+  if (!client || !channelId) return false;
 
-  channelId = id;
-  seconds = sec;
-  pingRoleId = roleId;
-  autoReact = reactions || [];
-  startTime = Date.now(); // track start time
+  const channel = client.channels.cache.get(channelId);
+  if (!channel) return false;
+  
+  const guildId = channel.guild.id;
+  const state = getGuildState(guildId);
 
-  if (interval) clearInterval(interval);
+  state.channelId = channelId;
+  state.seconds = sec;
+  state.pingRoleId = roleId;
+  state.autoReact = reactions || [];
+  state.startTime = Date.now();
 
-  post(client); // post immediately
+  if (state.interval) clearInterval(state.interval);
 
-  interval = setInterval(() => {
-    post(client);
-  }, seconds * 1000);
+  post(client, guildId); // post immediately
 
-  console.log(`✅ Auto-poster started in channel ${channelId} every ${seconds} seconds`);
+  state.interval = setInterval(() => {
+    post(client, guildId);
+  }, state.seconds * 1000);
+
+  console.log(`✅ Auto-poster started in guild ${guildId}, channel ${channelId} every ${sec} seconds`);
   return true;
 }
 
@@ -86,51 +111,76 @@ function startAutoPoster(client, id, sec = 3600, roleId = null, reactions = []) 
  * Update the interval of auto-poster
  * @param {import('discord.js').Client} client 
  * @param {number} ms Interval in milliseconds
- * @param {string} [id] Optional channel ID to update
+ * @param {string} [channelId] Optional channel ID to update
  * @param {string} [roleId] Optional role ID to ping
  * @param {string[]} [reactions] Optional array of emojis to auto-react
  */
-function updateInterval(client, ms, id, roleId, reactions) {
+function updateInterval(client, ms, channelId, roleId, reactions) {
   if (ms < 10000) return false; // min 10s
-
-  if (id) channelId = id; // allow updating channel
-  if (roleId !== undefined) pingRoleId = roleId; // allow updating role
-  if (reactions !== undefined) autoReact = reactions; // allow updating reactions
-
   if (!channelId) return false;
 
-  seconds = Math.floor(ms / 1000);
-  startAutoPoster(client, channelId, seconds, pingRoleId, autoReact);
-  return true;
+  const channel = client.channels.cache.get(channelId);
+  if (!channel) return false;
+  
+  const guildId = channel.guild.id;
+  const state = getGuildState(guildId);
+
+  state.channelId = channelId;
+  if (roleId !== undefined) state.pingRoleId = roleId;
+  if (reactions !== undefined) state.autoReact = reactions;
+
+  const seconds = Math.floor(ms / 1000);
+  return startAutoPoster(client, channelId, seconds, state.pingRoleId, state.autoReact);
 }
 
 /**
- * Stop the auto-poster
+ * Stop the auto-poster for a guild
+ * @param {string} guildId
  */
-function stopAutoPoster() {
-  if (interval) {
-    clearInterval(interval);
-    interval = null;
-    startTime = null; // reset start time
-    console.log("✅ Auto-poster stopped.");
+function stopAutoPoster(guildId) {
+  if (!guildId) return false;
+  
+  const state = getGuildState(guildId);
+  
+  if (state.interval) {
+    clearInterval(state.interval);
+    state.interval = null;
+    state.startTime = null;
+    console.log(`✅ Auto-poster stopped for guild ${guildId}.`);
     return true;
   }
   return false;
 }
 
 /**
- * Get current state of the auto-poster
+ * Get current state of the auto-poster for a guild
+ * @param {string} guildId
  */
-function getAutoPosterState() {
+function getAutoPosterState(guildId) {
+  if (!guildId) {
+    return {
+      running: false,
+      channelId: null,
+      intervalSeconds: 3600,
+      pingRoleId: null,
+      totalPosts: 0,
+      lastPostTime: null,
+      startTime: null,
+      autoReact: [],
+    };
+  }
+  
+  const state = getGuildState(guildId);
+  
   return {
-    running: !!interval,
-    channelId,
-    intervalSeconds: seconds,
-    pingRoleId,
-    totalPosts,
-    lastPostTime,
-    startTime,
-    autoReact,
+    running: !!state.interval,
+    channelId: state.channelId,
+    intervalSeconds: state.seconds,
+    pingRoleId: state.pingRoleId,
+    totalPosts: state.totalPosts,
+    lastPostTime: state.lastPostTime,
+    startTime: state.startTime,
+    autoReact: state.autoReact,
   };
 }
 

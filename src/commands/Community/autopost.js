@@ -11,7 +11,7 @@ module.exports = {
             return interaction.reply({ content: "Only administrators can use this command.", ephemeral: true });
         }
 
-        const state = getAutoPosterState();
+        const state = getAutoPosterState(interaction.guildId);
         
         const embed = new EmbedBuilder()
             .setColor(state.running ? '#2ecc71' : '#95a5a6')

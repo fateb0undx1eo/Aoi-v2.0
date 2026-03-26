@@ -56,10 +56,13 @@ module.exports = {
       });
 
     } catch (err) {
-
       console.error("Passed Error:", err);
-
-      interaction.editReply("❌ Failed to generate image.");
+      
+      if (interaction.deferred) {
+        await interaction.editReply("❌ Failed to generate image.").catch(() => {});
+      } else if (!interaction.replied) {
+        await interaction.reply({ content: "❌ Failed to generate image.", ephemeral: true }).catch(() => {});
+      }
     }
   }
 };
