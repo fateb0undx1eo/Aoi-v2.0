@@ -22,7 +22,7 @@ module.exports = {
                 return;
             }
             try {
-                await command.execute(interaction);
+                await command.execute(interaction, client);
             } catch (error) {
                 console.error(`Error executing ${interaction.commandName}:`, error);
                 const errorEmbed = new EmbedBuilder()
@@ -39,35 +39,22 @@ module.exports = {
             return;
         }
 
-        if (interaction.isButton()) {
+        if (interaction.isButton() || interaction.isStringSelectMenu() || interaction.isModalSubmit()) {
             const customId = interaction.customId;
+            
             if (customId.startsWith('afk_')) {
-                const afkInteractions = require('./handlers/afkInteractions');
-                return afkInteractions.handleButton(interaction);
+                const { handleButton } = require('./handlers/afkInteractions');
+                return handleButton(interaction);
             }
+            
             if (customId.startsWith('autopost_')) {
-                const autopostInteractions = require('./handlers/autopostInteractions');
-                return autopostInteractions.handleButton(interaction);
+                const { handleAutopostInteractions } = require('./handlers/autopostInteractions');
+                return handleAutopostInteractions(interaction);
             }
-            if (customId.startsWith('chess_')) {
-                const chessInteractions = require('./handlers/chessInteractions');
-                return chessInteractions.handleButton(interaction);
-            }
-        }
-
-        if (interaction.isStringSelectMenu()) {
-            const customId = interaction.customId;
-            if (customId.startsWith('autopost_')) {
-                const autopostInteractions = require('./handlers/autopostInteractions');
-                return autopostInteractions.handleSelectMenu(interaction);
-            }
-        }
-
-        if (interaction.isModalSubmit()) {
-            const customId = interaction.customId;
-            if (customId.startsWith('autopost_')) {
-                const autopostInteractions = require('./handlers/autopostInteractions');
-                return autopostInteractions.handleModal(interaction);
+            
+            if (customId.startsWith('chess_') || customId.startsWith('lb_')) {
+                const { handleChessInteractions } = require('./handlers/chessInteractions');
+                return handleChessInteractions(interaction);
             }
         }
     }
