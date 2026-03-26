@@ -106,7 +106,7 @@ async function handleAutopostInteractions(interaction) {
 
         // Refresh statistics
         if (action === 'refresh' && interaction.customId === 'autopost_refresh_stats') {
-            const state = getAutoPosterState();
+            const state = getAutoPosterState(interaction.guild.id);
             
             if (!state.running) {
                 await interaction.update({ 
@@ -168,7 +168,7 @@ async function handleAutopostInteractions(interaction) {
 
         // Back to main menu from statistics
         if (action === 'back' && interaction.customId === 'autopost_back_main') {
-            const state = getAutoPosterState();
+            const state = getAutoPosterState(interaction.guild.id);
             
             const embed = new EmbedBuilder()
                 .setColor(state.running ? '#2ecc71' : '#95a5a6')
@@ -209,7 +209,7 @@ async function handleAutopostInteractions(interaction) {
 
         // Stop button - Stop auto-posting
         if (action === 'stop') {
-            stopAutoPoster();
+            stopAutoPoster(interaction.guild.id);
             
             const embed = new EmbedBuilder()
                 .setColor('#e74c3c')
