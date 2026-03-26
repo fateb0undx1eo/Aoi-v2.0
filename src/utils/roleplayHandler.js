@@ -100,6 +100,42 @@ const ROLEPLAY_ACTIONS = {
     selfMessage: "You can't peck yourself!",
     botMessage: "You can't peck bots!"
   },
+  lick: {
+    requiresTarget: true,
+    message: (author, target) => `${author} licks ${target}`,
+    selfMessage: "You can't lick yourself!",
+    botMessage: "You can't lick bots!"
+  },
+  highfive: {
+    requiresTarget: true,
+    message: (author, target) => `${author} high-fives ${target}`,
+    selfMessage: "You can't high-five yourself!",
+    botMessage: "You can't high-five bots!"
+  },
+  bonk: {
+    requiresTarget: true,
+    message: (author, target) => `${author} bonks ${target}`,
+    selfMessage: "You can't bonk yourself!",
+    botMessage: "You can't bonk bots!"
+  },
+  bully: {
+    requiresTarget: true,
+    message: (author, target) => `${author} bullies ${target}`,
+    selfMessage: "You can't bully yourself!",
+    botMessage: "You can't bully bots!"
+  },
+  shoot: {
+    requiresTarget: true,
+    message: (author, target) => `${author} shoots ${target}`,
+    selfMessage: "You can't shoot yourself!",
+    botMessage: "You can't shoot bots!"
+  },
+  handshake: {
+    requiresTarget: true,
+    message: (author, target) => `${author} shakes hands with ${target}`,
+    selfMessage: "You can't shake hands with yourself!",
+    botMessage: "You can't shake hands with bots!"
+  },
 
   // Solo actions
   cry: {
@@ -149,6 +185,66 @@ const ROLEPLAY_ACTIONS = {
   nope: {
     requiresTarget: false,
     message: (author) => `${author} says nope`
+  },
+  baka: {
+    requiresTarget: false,
+    message: (author) => `${author} is being a baka`
+  },
+  think: {
+    requiresTarget: false,
+    message: (author) => `${author} is thinking`
+  },
+  sleep: {
+    requiresTarget: false,
+    message: (author) => `${author} is sleeping`
+  },
+  smug: {
+    requiresTarget: false,
+    message: (author) => `${author} looks smug`
+  },
+  nod: {
+    requiresTarget: false,
+    message: (author) => `${author} nods`
+  },
+  lurk: {
+    requiresTarget: false,
+    message: (author) => `${author} is lurking`
+  },
+  facepalm: {
+    requiresTarget: false,
+    message: (author) => `${author} facepalms`
+  },
+  laugh: {
+    requiresTarget: false,
+    message: (author) => `${author} is laughing`
+  },
+  tableflip: {
+    requiresTarget: false,
+    message: (author) => `${author} flips the table`
+  },
+  thumbsup: {
+    requiresTarget: false,
+    message: (author) => `${author} gives a thumbs up`
+  },
+  run: {
+    requiresTarget: false,
+    message: (author) => `${author} is running`
+  },
+  bored: {
+    requiresTarget: false,
+    message: (author) => `${author} is bored`
+  },
+  angry: {
+    requiresTarget: false,
+    message: (author) => `${author} is angry`
+  },
+  waifu: {
+    requiresTarget: false,
+    message: (author) => `${author} found a waifu!`
+  },
+  husbando: {
+    requiresTarget: false,
+    message: (author) => `${author} found a husbando!`
   }
 };
 
