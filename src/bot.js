@@ -54,9 +54,6 @@ mongoose.connect(process.env.MONGO_URI)
         process.exit(1);
     });
 
-// Initialize Bot Configuration Service
-const BotConfigService = require('./services/botConfigService');
-
 // Login to Discord
 console.log('🔄 Logging in to Discord...');
 client.login(process.env.BOT_TOKEN)
@@ -68,12 +65,8 @@ client.login(process.env.BOT_TOKEN)
         process.exit(1);
     });
 
-// Initialize bot config service when ready
+// Load dashboard after bot is ready
 client.once('ready', () => {
-    client.botConfigService = new BotConfigService(client);
-    console.log('✅ Bot Configuration Service initialized');
-    
-    // Load dashboard after bot is ready
     const dashboardPath = require('path').join(__dirname, '../admin/dashboard.js');
     if (require('fs').existsSync(dashboardPath)) {
         require(dashboardPath);

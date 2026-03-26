@@ -1,5 +1,3 @@
-const BotConfigSchema = require('../schemas/botConfigSchema');
-
 /**
  * Rate limiter for Discord API operations
  * Enforces Discord's rate limits: username (2/hour), avatar (2/hour), banner (2/hour), presence (5/minute)
@@ -68,19 +66,6 @@ class RateLimiter {
         const history = this.cache.get(key) || [];
         history.push(Date.now());
         this.cache.set(key, history);
-
-        // Update database
-        try {
-            const config = await BotConfigSchema.findOne({ botId });
-            if (config && config.rateLimits[operation]) {
-                config.rateLimits[operation].lastChanged = new Date();
-                config.rateLimits[operation].changesRemaining = 
-                    this.limits[operation].max - history.filter(t => Date.now() - t < this.limits[operation].window).length;
-                await config.save();
-            }
-        } catch (error) {
-            console.error('Failed to update rate limit in database:', error);
-        }
     }
 
     /**
@@ -105,25 +90,10 @@ class RateLimiter {
                 this.cache.delete(key);
             }
         }
-
-        // Reset database
-        try {
-            const config = await BotConfigSchema.findOne({ botId });
-            if (config) {
-                config.rateLimits = {
-                    username: { changesRemaining: 2 },
-                    avatar: { changesRemaining: 2 },
-                    banner: { changesRemaining: 2 }
-                };
-                await config.save();
-            }
-        } catch (error) {
-            console.error('Failed to reset rate limits in database:', error);
-        }
     }
 
     /**
-     * Get operation history from cache or database
+     * Get operation history from cache
      * @param {string} operation - Operation type
      * @param {string} botId - Bot ID
      * @returns {Promise<Array<number>>} - Array of timestamps
@@ -131,59 +101,19 @@ class RateLimiter {
     async getHistory(operation, botId) {
         const key = `${botId}:${operation}`;
         
-        // Check cache first
+        // Check cache
         if (this.cache.has(key)) {
             return this.cache.get(key);
-        }
-
-        // Load from database
-        try {
-            const config = await BotConfigSchema.findOne({ botId });
-            if (config && config.rateLimits[operation] && config.rateLimits[operation].lastChanged) {
-                const lastChanged = config.rateLimits[operation].lastChanged.getTime();
-                const now = Date.now();
-                const limit = this.limits[operation];
-                
-                // If within window, reconstruct history based on remaining changes
-                if (now - lastChanged < limit.window) {
-                    const used = limit.max - (config.rateLimits[operation].changesRemaining || 0);
-                    const history = Array(used).fill(lastChanged);
-                    this.cache.set(key, history);
-                    return history;
-                }
-            }
-        } catch (error) {
-            console.error('Failed to load rate limit history from database:', error);
         }
 
         return [];
     }
 
     /**
-     * Sync cache to database periodically
+     * Sync cache to database periodically (no-op now that botConfig is removed)
      */
     async syncToDatabase() {
-        for (const [key, history] of this.cache.entries()) {
-            const [botId, operation] = key.split(':');
-            const limit = this.limits[operation];
-            if (!limit) continue;
-
-            try {
-                const config = await BotConfigSchema.findOne({ botId });
-                if (config && config.rateLimits[operation]) {
-                    const now = Date.now();
-                    const recentOps = history.filter(t => now - t < limit.window);
-                    
-                    if (recentOps.length > 0) {
-                        config.rateLimits[operation].lastChanged = new Date(Math.max(...recentOps));
-                        config.rateLimits[operation].changesRemaining = limit.max - recentOps.length;
-                        await config.save();
-                    }
-                }
-            } catch (error) {
-                console.error(`Failed to sync rate limit for ${key}:`, error);
-            }
-        }
+        // No database sync needed anymore
     }
 }
 
