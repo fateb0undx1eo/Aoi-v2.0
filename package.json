@@ -1,13 +1,13 @@
 {
   "name": "aoi-v2",
-  "version": "2.0.0",
-  "description": "Aoi v2.0 - Advanced Discord Bot with Admin Dashboard",
-  "main": "src/index.js",
+  "version": "3.0.0",
+  "description": "Aoi v3.0 - Advanced Discord Bot with Pure Discord.js (No Framework)",
+  "main": "index.js",
   "scripts": {
-    "start": "node .",
+    "start": "node index.js",
     "generate": "node cli.js",
     "manage": "node manage.js",
-    "dev": "nodemon src/index.js",
+    "dev": "nodemon index.js",
     "setup-dashboard": "node setup-dashboard.js",
     "build-dashboard": "cd admin-react && npm run build"
   },
