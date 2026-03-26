@@ -304,7 +304,7 @@ module.exports = {
         }
 
         try {
-            await command.execute(message, client, args);
+            await command.execute(message, args, client);
 
             // Track prefix command statistics if enabled
             await trackPrefixCommandStats(message, command, client);
