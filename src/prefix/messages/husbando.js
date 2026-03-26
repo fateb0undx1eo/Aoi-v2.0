@@ -1,5 +1,5 @@
 const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require("discord.js");
-const WaifuConfig = require("../schemas/waifuConfigSchema");
+const WaifuConfig = require("../../schemas/waifuConfigSchema");
 
 // Cooldown storage
 const globalCooldowns = new Map(); // guildId -> timestamp

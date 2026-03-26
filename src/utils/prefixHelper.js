@@ -1,5 +1,4 @@
 const PrefixSchema = require('../schemas/prefixSchema');
-const config = require('../config');
 
 /**
  * Get the regular prefix for a guild
@@ -9,10 +8,10 @@ const config = require('../config');
 async function getPrefix(guildId) {
     try {
         const prefixDoc = await PrefixSchema.findOne({ guildId: guildId || 'global' });
-        return prefixDoc?.prefix || config.prefix.value || '!';
+        return prefixDoc?.prefix || '!';
     } catch (error) {
         console.error('Failed to fetch prefix from database:', error);
-        return config.prefix.value || '!';
+        return '!';
     }
 }
 
@@ -40,13 +39,13 @@ async function getBothPrefixes(guildId) {
     try {
         const prefixDoc = await PrefixSchema.findOne({ guildId: guildId || 'global' });
         return {
-            prefix: prefixDoc?.prefix || config.prefix.value || '!',
+            prefix: prefixDoc?.prefix || '!',
             roleplayPrefix: prefixDoc?.roleplayPrefix || 'r!'
         };
     } catch (error) {
         console.error('Failed to fetch prefixes from database:', error);
         return {
-            prefix: config.prefix.value || '!',
+            prefix: '!',
             roleplayPrefix: 'r!'
         };
     }
