@@ -21,27 +21,27 @@ async function handleAutopostInteractions(interaction) {
 
             // Configure/Setup button - Start configuration flow
             if (action === 'configure') {
-                await interaction.deferUpdate().catch(() => {});
-            const channelRow = new ActionRowBuilder()
-                .addComponents(
-                    new ChannelSelectMenuBuilder()
-                        .setCustomId('autopost_channel_select')
-                        .setPlaceholder('Select channel for meme posts')
-                        .addChannelTypes(ChannelType.GuildText)
-                );
+                // Use update() directly without deferring for immediate response
+                const channelRow = new ActionRowBuilder()
+                    .addComponents(
+                        new ChannelSelectMenuBuilder()
+                            .setCustomId('autopost_channel_select')
+                            .setPlaceholder('Select channel for meme posts')
+                            .addChannelTypes(ChannelType.GuildText)
+                    );
 
-            const embed = new EmbedBuilder()
-                .setColor('#3498db')
-                .setTitle('Configuration - Step 1 of 4')
-                .setDescription('Select the channel where memes will be posted')
-                .setFooter({ text: 'Auto-Post Configuration' });
+                const embed = new EmbedBuilder()
+                    .setColor('#3498db')
+                    .setTitle('Configuration - Step 1 of 4')
+                    .setDescription('Select the channel where memes will be posted')
+                    .setFooter({ text: 'Auto-Post Configuration' });
 
-            await interaction.editReply({
-                embeds: [embed],
-                components: [channelRow]
-            });
-            return true;
-        }
+                await interaction.update({
+                    embeds: [embed],
+                    components: [channelRow]
+                }).catch(() => {});
+                return true;
+            }
 
         // Statistics button - Show detailed stats
         if (action === 'stats') {
@@ -106,15 +106,14 @@ async function handleAutopostInteractions(interaction) {
 
         // Refresh statistics
         if (action === 'refresh' && interaction.customId === 'autopost_refresh_stats') {
-            await interaction.deferUpdate().catch(() => {});
-            const state = getAutoPosterState(interaction.guildId);
+            const state = getAutoPosterState();
             
             if (!state.running) {
                 await interaction.update({ 
                     content: 'Auto-posting is not currently active. No statistics available.',
                     embeds: [],
                     components: []
-                });
+                }).catch(() => {});
                 return true;
             }
 
@@ -169,8 +168,7 @@ async function handleAutopostInteractions(interaction) {
 
         // Back to main menu from statistics
         if (action === 'back' && interaction.customId === 'autopost_back_main') {
-            await interaction.deferUpdate().catch(() => {});
-            const state = getAutoPosterState(interaction.guildId);
+            const state = getAutoPosterState();
             
             const embed = new EmbedBuilder()
                 .setColor(state.running ? '#2ecc71' : '#95a5a6')
@@ -205,14 +203,13 @@ async function handleAutopostInteractions(interaction) {
                         .setDisabled(!state.running)
                 );
 
-            await interaction.editReply({ embeds: [embed], components: [row] });
+            await interaction.update({ embeds: [embed], components: [row] }).catch(() => {});
             return true;
         }
 
         // Stop button - Stop auto-posting
         if (action === 'stop') {
-            await interaction.deferUpdate().catch(() => {});
-            stopAutoPoster(interaction.guildId);
+            stopAutoPoster();
             
             const embed = new EmbedBuilder()
                 .setColor('#e74c3c')
@@ -220,17 +217,16 @@ async function handleAutopostInteractions(interaction) {
                 .setDescription('Auto-posting has been successfully stopped.')
                 .setTimestamp();
 
-            await interaction.editReply({
+            await interaction.update({
                 embeds: [embed],
                 components: []
-            });
+            }).catch(() => {});
             return true;
         }
 
         // Continue button - After role selection
         if (action === 'continue') {
-            const setupKey = `${interaction.guildId}_${interaction.user.id}`;
-            const setupData = interaction.client.autopostSetup?.get(setupKey);
+            const setupData = interaction.client.autopostSetup?.get(interaction.user.id);
             
             if (!setupData || !setupData.channelId) {
                 await interaction.reply({ 
@@ -272,7 +268,6 @@ async function handleAutopostInteractions(interaction) {
 
         // Back to channel selection
         if (action === 'back' && interaction.customId === 'autopost_back_channel') {
-            await interaction.deferUpdate().catch(() => {});
             const channelRow = new ActionRowBuilder()
                 .addComponents(
                     new ChannelSelectMenuBuilder()
@@ -287,23 +282,23 @@ async function handleAutopostInteractions(interaction) {
                 .setDescription('Select the channel where memes will be posted')
                 .setFooter({ text: 'Auto-Post Configuration' });
 
-            await interaction.editReply({
+            await interaction.update({
                 embeds: [embed],
                 components: [channelRow]
-            });
+            }).catch(() => {});
             return true;
         }
 
         // Back to role selection
         if (action === 'back' && interaction.customId === 'autopost_back_role') {
-            await interaction.deferUpdate().catch(() => {});
-            const setupKey = `${interaction.guildId}_${interaction.user.id}`;
-            const setupData = interaction.client.autopostSetup?.get(setupKey);
+            const setupData = interaction.client.autopostSetup?.get(interaction.user.id);
             
             if (!setupData) {
-                await interaction.editReply({ 
-                    content: 'Configuration data not found. Please start over with /autopost'
-                });
+                await interaction.update({ 
+                    content: 'Configuration data not found. Please start over with /autopost',
+                    embeds: [],
+                    components: []
+                }).catch(() => {});
                 return true;
             }
 
@@ -335,28 +330,28 @@ async function handleAutopostInteractions(interaction) {
                         .setStyle(ButtonStyle.Secondary)
                 );
 
-            await interaction.editReply({
+            await interaction.update({
                 embeds: [embed],
                 components: [roleRow, buttonRow]
-            });
+            }).catch(() => {});
             return true;
         }
 
         // Skip role button
         if (action === 'skip') {
-            await interaction.deferUpdate().catch(() => {});
-            const setupKey = `${interaction.guildId}_${interaction.user.id}`;
-            const setupData = interaction.client.autopostSetup?.get(setupKey);
+            const setupData = interaction.client.autopostSetup?.get(interaction.user.id);
             
             if (!setupData) {
-                await interaction.editReply({ 
-                    content: 'Configuration data not found. Please start over with /autopost'
-                });
+                await interaction.update({ 
+                    content: 'Configuration data not found. Please start over with /autopost',
+                    embeds: [],
+                    components: []
+                }).catch(() => {});
                 return true;
             }
 
             setupData.roleId = null;
-            interaction.client.autopostSetup.set(setupKey, setupData);
+            interaction.client.autopostSetup.set(interaction.user.id, setupData);
 
             const embed = new EmbedBuilder()
                 .setColor('#3498db')
@@ -380,10 +375,10 @@ async function handleAutopostInteractions(interaction) {
                         .setStyle(ButtonStyle.Primary)
                 );
 
-            await interaction.editReply({
+            await interaction.update({
                 embeds: [embed],
                 components: [buttonRow]
-            });
+            }).catch(() => {});
             return true;
         }
     }
@@ -398,10 +393,9 @@ async function handleAutopostInteractions(interaction) {
             interaction.client.autopostSetup = new Map();
         }
         
-        const setupKey = `${interaction.guildId}_${interaction.user.id}`;
-        const setupData = interaction.client.autopostSetup.get(setupKey) || {};
+        const setupData = interaction.client.autopostSetup.get(interaction.user.id) || {};
         setupData.channelId = selectedChannel.id;
-        interaction.client.autopostSetup.set(setupKey, setupData);
+        interaction.client.autopostSetup.set(interaction.user.id, setupData);
 
         const embed = new EmbedBuilder()
             .setColor('#3498db')
@@ -448,10 +442,9 @@ async function handleAutopostInteractions(interaction) {
             interaction.client.autopostSetup = new Map();
         }
         
-        const setupKey = `${interaction.guildId}_${interaction.user.id}`;
-        const setupData = interaction.client.autopostSetup.get(setupKey) || {};
+        const setupData = interaction.client.autopostSetup.get(interaction.user.id) || {};
         setupData.roleId = selectedRole?.id;
-        interaction.client.autopostSetup.set(setupKey, setupData);
+        interaction.client.autopostSetup.set(interaction.user.id, setupData);
 
         const embed = new EmbedBuilder()
             .setColor('#3498db')
@@ -496,8 +489,7 @@ async function handleAutopostInteractions(interaction) {
             return true;
         }
 
-        const setupKey = `${interaction.guildId}_${interaction.user.id}`;
-        const setupData = interaction.client.autopostSetup?.get(setupKey);
+        const setupData = interaction.client.autopostSetup?.get(interaction.user.id);
         
         if (!setupData || !setupData.channelId) {
             await interaction.reply({ 
@@ -533,7 +525,7 @@ async function handleAutopostInteractions(interaction) {
                 .setTimestamp()
                 .setFooter({ text: 'Auto-Post System' });
 
-            interaction.client.autopostSetup.delete(setupKey);
+            interaction.client.autopostSetup.delete(interaction.user.id);
             await interaction.reply({ embeds: [embed], ephemeral: true }).catch(() => {});
         } else {
             await interaction.reply({ 
