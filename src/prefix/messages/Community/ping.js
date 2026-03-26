@@ -1,6 +1,6 @@
 //! This is a basic structure for a prefix command in a discoBase using discord.js
 
-const { execute } = require("../../commands/Community/ping");
+const { execute } = require("../../../commands/Community/ping");
 
 module.exports = {
     disabled: false,
