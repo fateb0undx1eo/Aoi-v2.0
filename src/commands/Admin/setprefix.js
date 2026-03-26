@@ -3,12 +3,12 @@ const PrefixSchema = require('../../schemas/prefixSchema');
 
 module.exports = {
     data: new SlashCommandBuilder()
-        .setName('setroleplayprefix')
-        .setDescription('Set the roleplay command prefix for this server')
+        .setName('setprefix')
+        .setDescription('Set the regular command prefix for this server')
         .addStringOption(option =>
             option
                 .setName('prefix')
-                .setDescription('The new roleplay prefix (e.g., r!, rp!, ~)')
+                .setDescription('The new prefix (e.g., !, ?, $)')
                 .setRequired(true)
                 .setMaxLength(5)
         )
@@ -46,15 +46,15 @@ module.exports = {
             let prefixDoc = await PrefixSchema.findOne({ guildId });
 
             if (!prefixDoc) {
-                // Create new document with default regular prefix
+                // Create new document with default roleplay prefix
                 prefixDoc = new PrefixSchema({
                     guildId,
-                    prefix: '!',
-                    roleplayPrefix: newPrefix
+                    prefix: newPrefix,
+                    roleplayPrefix: 'r!'
                 });
             } else {
                 // Update existing document
-                prefixDoc.roleplayPrefix = newPrefix;
+                prefixDoc.prefix = newPrefix;
                 prefixDoc.updatedAt = new Date();
             }
 
@@ -62,8 +62,8 @@ module.exports = {
 
             const embed = new EmbedBuilder()
                 .setColor(0x00ff00)
-                .setTitle('Roleplay Prefix Updated')
-                .setDescription(`The roleplay command prefix has been changed to: \`${newPrefix}\``)
+                .setTitle('Prefix Updated')
+                .setDescription(`The regular command prefix has been changed to: \`${newPrefix}\``)
                 .addFields(
                     { name: 'Regular Prefix', value: `\`${prefixDoc.prefix}\``, inline: true },
                     { name: 'Roleplay Prefix', value: `\`${prefixDoc.roleplayPrefix}\``, inline: true }
@@ -74,9 +74,9 @@ module.exports = {
             await interaction.reply({ embeds: [embed] });
 
         } catch (error) {
-            console.error('Error setting roleplay prefix:', error);
+            console.error('Error setting prefix:', error);
             await interaction.reply({
-                content: 'Failed to update roleplay prefix. Please try again later.',
+                content: 'Failed to update prefix. Please try again later.',
                 ephemeral: true
             });
         }

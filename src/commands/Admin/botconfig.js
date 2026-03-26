@@ -84,6 +84,14 @@ module.exports = {
         ),
 
     async execute(interaction) {
+        // Check if user has Administrator permission
+        if (!interaction.memberPermissions?.has('Administrator')) {
+            return interaction.reply({
+                content: '❌ You need Administrator permission to use this command.',
+                ephemeral: true
+            });
+        }
+
         const subcommand = interaction.options.getSubcommand();
         const botConfigService = interaction.client.botConfigService;
 
