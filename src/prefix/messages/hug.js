@@ -1,4 +1,4 @@
-﻿const { executeRoleplayAction } = require("../utils/roleplayHandler");
+﻿const { executeRoleplayAction } = require("../../utils/roleplayHandler");
 
 module.exports = {
   name: "hug",

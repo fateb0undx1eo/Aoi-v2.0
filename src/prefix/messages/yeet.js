@@ -1,7 +1,7 @@
 const { EmbedBuilder } = require("discord.js");
-const { getRoleplayGIF } = require("../utils/roleplayAPI");
-const { getRoleplayPrefix } = require("../utils/prefixHelper");
-const logger = require("../utils/winstonLogger");
+const { getRoleplayGIF } = require("../../utils/roleplayAPI");
+const { getRoleplayPrefix } = require("../../utils/prefixHelper");
+const logger = require("../../utils/winstonLogger");
 
 const getRandomColor = () => Math.floor(Math.random() * 0xFFFFFF);
 

@@ -8,7 +8,7 @@ const chalk = require('chalk');
 const cors = require('cors');
 
 // Get the Express app and server from index.js
-const { client, server, app } = require('../src/index');
+const { client, server, app } = require('../index');
 
 // Initialize Socket.IO
 const SocketServer = require('../src/services/socketServer');
