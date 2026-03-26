@@ -74,5 +74,6 @@ async function handleAfkInteractions(interaction) {
 }
 
 module.exports = {
+  name: 'interactionCreate',
   handleAfkInteractions
 };

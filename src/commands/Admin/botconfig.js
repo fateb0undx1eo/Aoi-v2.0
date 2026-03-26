@@ -4,7 +4,7 @@ module.exports = {
     data: new SlashCommandBuilder()
         .setName('botconfig')
         .setDescription('Configure bot appearance and presence')
-        .setDefaultMemberPermissions('0x0000000000000008') // Administrator permission as string
+        .setDefaultMemberPermissions(0x0000000000000008n) // Administrator permission as BigInt
         .addSubcommand(subcommand =>
             subcommand
                 .setName('presence')

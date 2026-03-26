@@ -535,4 +535,7 @@ async function handleAutopostInteractions(interaction) {
     return false;
 }
 
-module.exports = { handleAutopostInteractions };
+module.exports = { 
+  name: 'interactionCreate',
+  handleAutopostInteractions 
+};

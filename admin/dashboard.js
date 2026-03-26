@@ -3,6 +3,7 @@ const bodyParser = require('body-parser');
 const fs = require('fs');
 const path = require('path');
 const session = require('express-session');
+const MongoStore = require('connect-mongo');
 const chalk = require('chalk');
 const cors = require('cors');
 
@@ -39,11 +40,18 @@ app.use(cors({
     allowedHeaders: ['Origin', 'X-Requested-With', 'Content-Type', 'Accept', 'Authorization']
 }));
 
-// Session configuration
+// Session configuration with MongoDB store (production-safe)
 app.use(session({
     secret: process.env.SESSION_SECRET || 'discobase-secret-key-change-this',
     resave: false,
     saveUninitialized: false,
+    store: MongoStore.create({
+        mongoUrl: process.env.MONGO_URI,
+        touchAfter: 24 * 3600, // Lazy session update (24 hours)
+        crypto: {
+            secret: process.env.SESSION_SECRET || 'discobase-secret-key-change-this'
+        }
+    }),
     cookie: { 
         secure: process.env.NODE_ENV === 'production',
         httpOnly: true,

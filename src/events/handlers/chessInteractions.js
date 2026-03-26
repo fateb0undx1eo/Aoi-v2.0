@@ -173,5 +173,6 @@ async function handleLeaderboardSelect(interaction) {
 }
 
 module.exports = {
+  name: 'interactionCreate',
   handleChessInteractions
 };

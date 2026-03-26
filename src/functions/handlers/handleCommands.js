@@ -95,7 +95,8 @@ const loadCommand = (client, filePath) => {
         return command;
     } catch (error) {
         log(`Failed to load command from "${formatFilePath(filePath)}".`, 'ERROR');
-        console.log(`${chalk.gray(`[${new Date().toLocaleTimeString()}]`)} ${gradient(['#ff0000', '#8b0000'])("✖ ERROR")} ${chalk.white('│')} ${error.message}`);
+        console.error(`${chalk.gray(`[${new Date().toLocaleTimeString()}]`)} ${gradient(['#ff0000', '#8b0000'])("✖ ERROR")} ${chalk.white('│')} ${error.message}`);
+        console.error(`${chalk.gray('Stack:')} ${error.stack}`);
         logErrorToFile(error);
         return null;
     }
