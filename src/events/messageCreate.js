@@ -5,7 +5,7 @@ module.exports = {
     async execute(message, client) {
         if (message.author.bot) return;
         
-        // Get prefix from database
+        // Get both prefixes from database
         let prefix = '!';
         let roleplayPrefix = 'r!';
         
