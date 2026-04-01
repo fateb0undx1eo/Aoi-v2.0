@@ -491,14 +491,16 @@ async function handleAutopostInteractions(interaction) {
 
     // ==================== MODAL SUBMISSION HANDLER ====================
     if (interaction.isModalSubmit() && interaction.customId === 'autopost_config_modal') {
+        // Defer reply immediately since starting autoposter might take time
+        await interaction.deferReply({ ephemeral: true }).catch(() => {});
+        
         const intervalSec = parseInt(interaction.fields.getTextInputValue('interval'));
         const reactionsInput = interaction.fields.getTextInputValue('reactions').trim();
         const reactions = reactionsInput ? reactionsInput.split(/\s+/).filter(r => r.length > 0) : [];
         
         if (isNaN(intervalSec) || intervalSec < 10) {
-            await interaction.reply({ 
-                content: 'Invalid interval. Must be a number greater than or equal to 10 seconds.', 
-                ephemeral: true 
+            await interaction.editReply({ 
+                content: 'Invalid interval. Must be a number greater than or equal to 10 seconds.'
             }).catch(() => {});
             return true;
         }
@@ -506,9 +508,8 @@ async function handleAutopostInteractions(interaction) {
         const setupData = interaction.client.autopostSetup?.get(interaction.user.id);
         
         if (!setupData || !setupData.channelId) {
-            await interaction.reply({ 
-                content: 'Configuration data not found. Please start over with /autopost', 
-                ephemeral: true 
+            await interaction.editReply({ 
+                content: 'Configuration data not found. Please start over with /autopost'
             }).catch(() => {});
             return true;
         }
@@ -540,11 +541,10 @@ async function handleAutopostInteractions(interaction) {
                 .setFooter({ text: 'Auto-Post System' });
 
             interaction.client.autopostSetup.delete(interaction.user.id);
-            await interaction.reply({ embeds: [embed], ephemeral: true }).catch(() => {});
+            await interaction.editReply({ embeds: [embed] }).catch(() => {});
         } else {
-            await interaction.reply({ 
-                content: 'Failed to start auto-posting. Please try again.', 
-                ephemeral: true 
+            await interaction.editReply({ 
+                content: 'Failed to start auto-posting. Please try again.'
             }).catch(() => {});
         }
         return true;

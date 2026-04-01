@@ -124,9 +124,17 @@ if (interaction.isStringSelectMenu() && interaction.customId === "chess_leaderbo
     const { getLeaderboard } = require("../../functions/handlers/chessService");
     const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require("discord.js");
 
+    // Defer immediately to prevent timeout
     await interaction.deferUpdate().catch(() => {});
 
     const mode = interaction.values[0];
+    
+    // Show loading state
+    await interaction.editReply({
+        content: "Loading leaderboard data...",
+        components: []
+    }).catch(() => {});
+
     const leaderboard = await getLeaderboard(mode);
 
     if (!leaderboard || leaderboard.length === 0) {
@@ -172,6 +180,7 @@ if (interaction.isStringSelectMenu() && interaction.customId === "chess_leaderbo
     );
 
     const message = await interaction.editReply({
+        content: null,
         embeds: [generateEmbed()],
         components: [buttons()]
     }).catch(() => {});
@@ -179,7 +188,7 @@ if (interaction.isStringSelectMenu() && interaction.customId === "chess_leaderbo
     if (!message) return;
 
     const collector = message.createMessageComponentCollector({ 
-        time: 120000, // 2 minutes
+        time: 180000, // 3 minutes
         filter: (i) => i.user.id === interaction.user.id // Only allow original user
     });
 
