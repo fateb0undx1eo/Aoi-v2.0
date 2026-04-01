@@ -31,7 +31,6 @@ module.exports = {
     data: new SlashCommandBuilder()
         .setName("chess")
         .setDescription("Chess.com profile commands")
-        .setDMPermission(false) // Server only
 
         .addSubcommand(sub =>
             sub.setName("profile")
@@ -40,7 +39,6 @@ module.exports = {
                     option.setName("username")
                         .setDescription("Chess.com username")
                         .setRequired(true)
-                        .setAutocomplete(true) // Enable autocomplete
                 )
         )
 
@@ -48,16 +46,10 @@ module.exports = {
             sub.setName("compare")
                 .setDescription("Compare two players")
                 .addStringOption(option =>
-                    option.setName("user1")
-                        .setDescription("First username")
-                        .setRequired(true)
-                        .setAutocomplete(true) // Enable autocomplete
+                    option.setName("user1").setDescription("First username").setRequired(true)
                 )
                 .addStringOption(option =>
-                    option.setName("user2")
-                        .setDescription("Second username")
-                        .setRequired(true)
-                        .setAutocomplete(true) // Enable autocomplete
+                    option.setName("user2").setDescription("Second username").setRequired(true)
                 )
                 .addStringOption(option =>
                     option.setName("mode")
@@ -75,45 +67,6 @@ module.exports = {
             sub.setName("leaderboard")
                 .setDescription("View official Chess.com leaderboard")
         ),
-
-    async autocomplete(interaction) {
-        const focusedValue = interaction.options.getFocused().toLowerCase();
-        
-        // Popular chess players for suggestions
-        const popularPlayers = [
-            { name: 'Magnus Carlsen (2847)', value: 'magnuscarlsen' },
-            { name: 'Hikaru Nakamura (2835)', value: 'hikaru' },
-            { name: 'Fabiano Caruana (2820)', value: 'fabianocaruana' },
-            { name: 'Ding Liren (2799)', value: 'dingliren' },
-            { name: 'Ian Nepomniachtchi (2795)', value: 'lachesisq' },
-            { name: 'Alireza Firouzja (2785)', value: 'firouzja2003' },
-            { name: 'Wesley So (2770)', value: 'gmwso' },
-            { name: 'Levon Aronian (2765)', value: 'levon' },
-            { name: 'Anish Giri (2760)', value: 'anishgiri' },
-            { name: 'Maxime Vachier-Lagrave (2755)', value: 'mvl' }
-        ];
-
-        // Filter based on input
-        const filtered = popularPlayers.filter(player =>
-            player.name.toLowerCase().includes(focusedValue) ||
-            player.value.toLowerCase().includes(focusedValue)
-        );
-
-        // If user typed something specific, add it as first option
-        if (focusedValue.length >= 3) {
-            filtered.unshift({
-                name: `Search: ${focusedValue}`,
-                value: focusedValue
-            });
-        }
-
-        await interaction.respond(
-            filtered.slice(0, 25).map(player => ({
-                name: player.name,
-                value: player.value
-            }))
-        );
-    },
 
     async execute(interaction) {
         try {
