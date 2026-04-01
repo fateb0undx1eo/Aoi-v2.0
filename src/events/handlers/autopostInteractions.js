@@ -21,7 +21,9 @@ async function handleAutopostInteractions(interaction) {
 
             // Configure/Setup button - Start configuration flow
             if (action === 'configure') {
-                // Use update() directly without deferring for immediate response
+                // Defer update immediately to prevent timeout
+                await interaction.deferUpdate().catch(() => {});
+                
                 const channelRow = new ActionRowBuilder()
                     .addComponents(
                         new ChannelSelectMenuBuilder()
@@ -36,7 +38,7 @@ async function handleAutopostInteractions(interaction) {
                     .setDescription('Select the channel where memes will be posted')
                     .setFooter({ text: 'Auto-Post Configuration' });
 
-                await interaction.update({
+                await interaction.editReply({
                     embeds: [embed],
                     components: [channelRow]
                 }).catch(() => {});
@@ -106,10 +108,12 @@ async function handleAutopostInteractions(interaction) {
 
         // Refresh statistics
         if (action === 'refresh' && interaction.customId === 'autopost_refresh_stats') {
+            await interaction.deferUpdate().catch(() => {});
+            
             const state = getAutoPosterState(interaction.guild.id);
             
             if (!state.running) {
-                await interaction.update({ 
+                await interaction.editReply({ 
                     content: 'Auto-posting is not currently active. No statistics available.',
                     embeds: [],
                     components: []
@@ -162,12 +166,14 @@ async function handleAutopostInteractions(interaction) {
                         .setStyle(ButtonStyle.Primary)
                 );
 
-            await interaction.update({ embeds: [embed], components: [buttonRow] });
+            await interaction.update({ embeds: [embed], components: [buttonRow] }).catch(() => {});
             return true;
         }
 
         // Back to main menu from statistics
         if (action === 'back' && interaction.customId === 'autopost_back_main') {
+            await interaction.deferUpdate().catch(() => {});
+            
             const state = getAutoPosterState(interaction.guild.id);
             
             const embed = new EmbedBuilder()
@@ -203,12 +209,14 @@ async function handleAutopostInteractions(interaction) {
                         .setDisabled(!state.running)
                 );
 
-            await interaction.update({ embeds: [embed], components: [row] }).catch(() => {});
+            await interaction.editReply({ embeds: [embed], components: [row] }).catch(() => {});
             return true;
         }
 
         // Stop button - Stop auto-posting
         if (action === 'stop') {
+            await interaction.deferUpdate().catch(() => {});
+            
             stopAutoPoster(interaction.guild.id);
             
             const embed = new EmbedBuilder()
@@ -217,7 +225,7 @@ async function handleAutopostInteractions(interaction) {
                 .setDescription('Auto-posting has been successfully stopped.')
                 .setTimestamp();
 
-            await interaction.update({
+            await interaction.editReply({
                 embeds: [embed],
                 components: []
             }).catch(() => {});
@@ -268,6 +276,8 @@ async function handleAutopostInteractions(interaction) {
 
         // Back to channel selection
         if (action === 'back' && interaction.customId === 'autopost_back_channel') {
+            await interaction.deferUpdate().catch(() => {});
+            
             const channelRow = new ActionRowBuilder()
                 .addComponents(
                     new ChannelSelectMenuBuilder()
@@ -282,7 +292,7 @@ async function handleAutopostInteractions(interaction) {
                 .setDescription('Select the channel where memes will be posted')
                 .setFooter({ text: 'Auto-Post Configuration' });
 
-            await interaction.update({
+            await interaction.editReply({
                 embeds: [embed],
                 components: [channelRow]
             }).catch(() => {});
@@ -291,10 +301,12 @@ async function handleAutopostInteractions(interaction) {
 
         // Back to role selection
         if (action === 'back' && interaction.customId === 'autopost_back_role') {
+            await interaction.deferUpdate().catch(() => {});
+            
             const setupData = interaction.client.autopostSetup?.get(interaction.user.id);
             
             if (!setupData) {
-                await interaction.update({ 
+                await interaction.editReply({ 
                     content: 'Configuration data not found. Please start over with /autopost',
                     embeds: [],
                     components: []
@@ -330,7 +342,7 @@ async function handleAutopostInteractions(interaction) {
                         .setStyle(ButtonStyle.Secondary)
                 );
 
-            await interaction.update({
+            await interaction.editReply({
                 embeds: [embed],
                 components: [roleRow, buttonRow]
             }).catch(() => {});
@@ -339,10 +351,12 @@ async function handleAutopostInteractions(interaction) {
 
         // Skip role button
         if (action === 'skip') {
+            await interaction.deferUpdate().catch(() => {});
+            
             const setupData = interaction.client.autopostSetup?.get(interaction.user.id);
             
             if (!setupData) {
-                await interaction.update({ 
+                await interaction.editReply({ 
                     content: 'Configuration data not found. Please start over with /autopost',
                     embeds: [],
                     components: []
@@ -375,7 +389,7 @@ async function handleAutopostInteractions(interaction) {
                         .setStyle(ButtonStyle.Primary)
                 );
 
-            await interaction.update({
+            await interaction.editReply({
                 embeds: [embed],
                 components: [buttonRow]
             }).catch(() => {});

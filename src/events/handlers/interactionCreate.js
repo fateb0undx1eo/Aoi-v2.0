@@ -124,7 +124,7 @@ if (interaction.isStringSelectMenu() && interaction.customId === "chess_leaderbo
     const { getLeaderboard } = require("../../functions/handlers/chessService");
     const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require("discord.js");
 
-    await interaction.deferUpdate(); // VERY IMPORTANT
+    await interaction.deferUpdate().catch(() => {});
 
     const mode = interaction.values[0];
     const leaderboard = await getLeaderboard(mode);
@@ -133,7 +133,7 @@ if (interaction.isStringSelectMenu() && interaction.customId === "chess_leaderbo
         return interaction.editReply({
             content: "No leaderboard data found.",
             components: []
-        });
+        }).catch(() => {});
     }
 
     let page = 0;
@@ -174,21 +174,49 @@ if (interaction.isStringSelectMenu() && interaction.customId === "chess_leaderbo
     const message = await interaction.editReply({
         embeds: [generateEmbed()],
         components: [buttons()]
+    }).catch(() => {});
+
+    if (!message) return;
+
+    const collector = message.createMessageComponentCollector({ 
+        time: 120000, // 2 minutes
+        filter: (i) => i.user.id === interaction.user.id // Only allow original user
     });
 
-    const collector = message.createMessageComponentCollector({ time: 60000 });
-
     collector.on("collect", async (i) => {
-
         if (!i.isButton()) return;
+
+        // Acknowledge interaction immediately
+        await i.deferUpdate().catch(() => {});
 
         if (i.customId === "lb_next" && page < totalPages - 1) page++;
         if (i.customId === "lb_prev" && page > 0) page--;
 
-        await i.update({
+        await i.editReply({
             embeds: [generateEmbed()],
             components: [buttons()]
-        });
+        }).catch(() => {});
+    });
+
+    collector.on("end", async () => {
+        // Disable buttons when collector expires
+        const disabledButtons = new ActionRowBuilder().addComponents(
+            new ButtonBuilder()
+                .setCustomId("lb_prev_disabled")
+                .setLabel("Previous")
+                .setStyle(ButtonStyle.Secondary)
+                .setDisabled(true),
+            new ButtonBuilder()
+                .setCustomId("lb_next_disabled")
+                .setLabel("Next")
+                .setStyle(ButtonStyle.Secondary)
+                .setDisabled(true)
+        );
+
+        await message.edit({
+            embeds: [generateEmbed()],
+            components: [disabledButtons]
+        }).catch(() => {});
     });
 
     return;
